@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneTrack — Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B1622;
+    --bg-2: #0F1E2E;
+    --card: #142839;
+    --card-hi: #17304A;
+    --line: rgba(255,255,255,0.07);
+    --text: #EDF1F5;
+    --text-dim: #93A5B8;
+    --text-faint: #5C6E80;
+    --good: #33D6A6;
+    --good-dim: rgba(51,214,166,0.16);
+    --warn: #F5B84E;
+    --warn-dim: rgba(245,184,78,0.16);
+    --bad: #F0685B;
+    --bad-dim: rgba(240,104,91,0.16);
+    --gold: #E8C468;
+    --silver: #C9D3DC;
+    --bronze: #D89A6A;
+    --shell-red: #EC1C24;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(51,214,166,0.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(232,196,104,0.05), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    padding: 28px 20px 60px;
+    min-height:100vh;
+  }
+  .wrap{ max-width: 1160px; margin: 0 auto; }
+
+  /* HEADER */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 30px; flex-wrap:wrap; gap:14px;
+  }
+  .brand{ display:flex; align-items:baseline; gap:14px; }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 34px; font-weight:700; letter-spacing:-0.02em;
+    color: var(--text);
+  }
+  .brand h1 span{ color: var(--good); }
+  .brand .sub{ color: var(--text-dim); font-size: 13.5px; font-weight:500; }
+  .daterange{
+    background: var(--card);
+    border:1px solid var(--line);
+    padding: 9px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight:600;
+    letter-spacing:0.01em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .daterange::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
+
+  /* PODIUM */
+  .podium-card{
+    background: linear-gradient(180deg, var(--card-hi), var(--card));
+    border:1px solid var(--line);
+    border-radius: 20px;
+    padding: 30px 30px 0;
+    margin-bottom: 24px;
+    overflow:hidden;
+    position:relative;
+  }
+  .podium-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--text-faint); font-weight:600; margin-bottom:22px;
+  }
+  .podium{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items:end;
+    gap: 16px;
+    padding-top: 10px;
+  }
+  .stand{
+    display:flex; flex-direction:column; align-items:center;
+    text-align:center;
+  }
+  .dept-tag{
+    font-size:10.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+    color: var(--text-faint); margin-bottom:12px;
+  }
+  .avatar{
+    width:72px; height:72px; border-radius:50%;
+    background: linear-gradient(145deg,#2A3F52,#1A2C3C);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px;
+    color:var(--text); border:3px solid var(--card);
+    margin-bottom:10px; position:relative; z-index:2;
+  }
+  .stand.rank1 .avatar{ border-color: var(--gold); box-shadow:0 0 0 3px rgba(232,196,104,0.25); width:84px;height:84px;font-size:26px;}
+  .stand.rank2 .avatar{ border-color: var(--silver); }
+  .stand.rank3 .avatar{ border-color: var(--bronze); }
+  .p-name{ font-weight:700; font-size:15px; margin-bottom:2px;}
+  .p-score{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13px; color:var(--good); margin-bottom:16px;}
+  .block{ width:100%; border-radius: 10px 10px 0 0; position:relative; }
+  .block-rank{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; color: rgba(255,255,255,0.35);
+    display:block; padding-top:12px; font-size:15px;
+  }
+  .rank1 .block{ height:96px; background: linear-gradient(180deg, rgba(232,196,104,0.22), rgba(232,196,104,0.05)); border-top:2px solid var(--gold);}
+  .rank2 .block{ height:66px; background: linear-gradient(180deg, rgba(201,211,220,0.16), rgba(201,211,220,0.04)); border-top:2px solid var(--silver);}
+  .rank3 .block{ height:48px; background: linear-gradient(180deg, rgba(216,154,106,0.18), rgba(216,154,106,0.04)); border-top:2px solid var(--bronze);}
+
+  /* SECTION LABEL */
+  .section-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--text-faint); font-weight:600;
+    margin: 34px 0 14px 2px;
+  }
+
+  /* METRIC GRID */
+  .metric-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .metric{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .m-ring{
+    flex-shrink:0; width:52px; height:52px; position:relative;
+  }
+  .m-ring svg{ transform: rotate(-90deg); }
+  .m-ring .bg{ stroke: rgba(255,255,255,0.08); }
+  .m-ring .fg{ stroke-linecap:round; transition: stroke-dashoffset 0.3s; }
+  .m-ring .pct{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600;
+  }
+  .m-body{ flex:1; min-width:0; }
+  .m-name{ font-size:13px; font-weight:600; color: var(--text-dim); margin-bottom:3px;}
+  .m-row{ display:flex; align-items:baseline; gap:6px; }
+  .m-actual{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; }
+  .m-target{ font-size:11.5px; color: var(--text-faint); font-weight:500;}
+
+  .good .fg{ stroke: var(--good); } .good .pct{ color: var(--good); }
+  .warn .fg{ stroke: var(--warn); } .warn .pct{ color: var(--warn); }
+  .bad  .fg{ stroke: var(--bad);  } .bad  .pct{ color: var(--bad); }
+
+  /* LEADERBOARD */
+  .boards{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .board{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+  }
+  .board-head{
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--line);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600; font-size:14.5px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .board-head .count{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-faint); font-weight:500;}
+  .row{
+    display:flex; align-items:center; gap:10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13.5px;
+  }
+  .row:last-child{ border-bottom:none; }
+  .rk{
+    width:20px; text-align:center; font-family:'IBM Plex Mono',monospace;
+    font-weight:600; font-size:12px; color: var(--text-faint); flex-shrink:0;
+  }
+  .row:nth-child(2) .rk{ color: var(--gold); }
+  .row:nth-child(3) .rk{ color: var(--silver); }
+  .row:nth-child(4) .rk{ color: var(--bronze); }
+  .rname{ flex:1; font-weight:600; color: var(--text); }
+  .rscore{ font-family:'IBM Plex Mono',monospace; font-weight:600; color: var(--text-dim); font-size:12.5px;}
+
+  /* FOOTER */
+  footer{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top: 34px; color: var(--text-faint); font-size:11.5px; font-weight:500;
+  }
+  .shell-badge{
+    width:22px; height:22px; border-radius:6px; background:var(--shell-red);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10px; color:white;
+  }
+
+  @media (max-width: 760px){
+    .metric-grid{ grid-template-columns: 1fr; }
+    .boards{ grid-template-columns: 1fr; }
+    .brand h1{ font-size:26px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>One<span>Track</span></h1>
+      <div class="sub">RCS Sg Bakap Resources</div>
+    </div>
+    <div class="daterange">1 Aug — 12 Aug 2026</div>
+  </header>
+
+  <div class="podium-card">
+    <div class="podium-eyebrow">Department Champions</div>
+    <div class="podium">
+      <div class="stand rank2">
+        <div class="dept-tag">Cashier</div>
+        <div class="avatar">M</div>
+        <div class="p-name">Musliha</div>
+        <div class="p-score">318 pts</div>
+        <div class="block"><span class="block-rank">2</span></div>
+      </div>
+      <div class="stand rank1">
+        <div class="dept-tag">NFR</div>
+        <div class="avatar">Z</div>
+        <div class="p-name">Zahra</div>
+        <div class="p-score">1,037 pts</div>
+        <div class="block"><span class="block-rank">1</span></div>
+      </div>
+      <div class="stand rank3">
+        <div class="dept-tag">Forecourt</div>
+        <div class="avatar">M</div>
+        <div class="p-name">Maynul</div>
+        <div class="p-score">145 pts</div>
+        <div class="block"><span class="block-rank">3</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Performance vs. Target</div>
+  <div class="metric-grid" id="metrics"></div>
+
+  <div class="section-label">Leaderboard</div>
+  <div class="boards">
+    <div class="board">
+      <div class="board-head">Cashier <span class="count">1–6 / 6</span></div>
+      <div id="lb-cashier"></div>
+    </div>
+    <div class="board">
+      <div class="board-head">Forecourt <span class="count">1–5 / 5</span></div>
+      <div id="lb-forecourt"></div>
+    </div>
+    <div class="board">
+      <div class="board-head">NFR <span class="count">1–8 / 24</span></div>
+      <div id="lb-nfr"></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="shell-badge">S</div>
+    <span>Powered by RCS Club · Built with Google Sheets Data</span>
+  </footer>
+
+</div>
+
+<script>
+  const metrics = [
+    { name:'Promo Item', actual:1503, target:960 },
+    { name:'Combo Bag', actual:72, target:144 },
+    { name:'Customer Service', actual:145, target:84 },
+    { name:'Toys', actual:25, target:84 },
+    { name:'Shell Cafe CPD', actual:1151, target:1440 },
+    { name:'Shell Cafe Combo', actual:794, target:1008 },
+    { name:'Refresh CPD', actual:1202, target:1200 },
+    { name:'Refresh Meal', actual:1222, target:480 },
+    { name:'Five Star Promo', actual:685, target:960 },
+    { name:'Daily Fresh Sales', actual:1677, target:624 },
+  ];
+
+  const metricsEl = document.getElementById('metrics');
+  const R = 21, C = 2*Math.PI*R;
+
+  metrics.forEach(m => {
+    const pct = m.actual / m.target;
+    const pctDisplay = Math.round(pct*100);
+    const level = pct >= 1 ? 'good' : pct >= 0.7 ? 'warn' : 'bad';
+    const dash = Math.min(pct,1) * C;
+
+    const div = document.createElement('div');
+    div.className = `metric ${level}`;
+    div.innerHTML = `
+      <div class="m-ring">
+        <svg width="52" height="52">
+          <circle class="bg" cx="26" cy="26" r="${R}" stroke-width="5" fill="none"/>
+          <circle class="fg" cx="26" cy="26" r="${R}" stroke-width="5" fill="none"
+            stroke-dasharray="${C}" stroke-dashoffset="${C - dash}"/>
+        </svg>
+        <div class="pct">${pctDisplay}%</div>
+      </div>
+      <div class="m-body">
+        <div class="m-name">${m.name}</div>
+        <div class="m-row">
+          <span class="m-actual">${m.actual.toLocaleString()}</span>
+          <span class="m-target">/ ${m.target.toLocaleString()}</span>
+        </div>
+      </div>
+    `;
+    metricsEl.appendChild(div);
+  });
+
+  const boards = {
+    'lb-cashier': [['Musliha',318],['Hazirah',305],['Hayati',291],['Aina',276],['Rakib',97],['Rajib',5]],
+    'lb-forecourt': [['Maynul',145],['Ajay',143],['Santosh',58],['Lokendra',55],['Niraj',41]],
+    'lb-nfr': [['Zahra',1037],['Puja',833],['Suriya',601],['Nazmul',600],['Santa',579],['Eva',532],['Auni',484],['Soe',469]],
+  };
+
+  Object.entries(boards).forEach(([id, rows]) => {
+    const el = document.getElementById(id);
+    rows.forEach((r,i) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<div class="rk">${i+1}</div><div class="rname">${r[0]}</div><div class="rscore">${r[1].toLocaleString()}</div>`;
+      el.appendChild(row);
+    });
+  });
+</script>
+
+</body>
+</html>
