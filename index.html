@@ -152,36 +152,114 @@
   .mom-val.up{ color: var(--good); }
   .mom-val.flame{ color: var(--flame); display:flex; align-items:center; gap:4px; }
 
-  /* METRIC GRID */
-  .metric-grid{
+  /* TRENDS SECTION */
+  .trends{
     display:grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.4fr 1fr;
     gap: 12px;
   }
-  .metric{
+  .trend-card{
     background: var(--card);
     border:1px solid var(--line);
     border-radius: 14px;
-    padding: 16px 18px;
-    display:flex; align-items:center; gap:14px;
+    padding: 16px 18px 12px;
   }
-  .m-ring{ flex-shrink:0; width:52px; height:52px; position:relative; }
+  .trend-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  .trend-title{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;
+  }
+  .trend-sub{ font-size:10.5px; color: var(--text-faint); font-weight:500; }
+  .line-fill{ fill: url(#lineGrad); opacity:0.5; }
+  .line-path{ fill:none; stroke: var(--good); stroke-width:2; }
+  .line-dot{ fill: var(--bg); stroke: var(--good); stroke-width:2; }
+  .line-dot.peak{ fill: var(--good); }
+  .avg-line{ stroke: var(--text-faint); stroke-width:1; stroke-dasharray:3 3; }
+  .axis-label{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; fill: var(--text-faint); }
+
+  .bar-chart{ display:flex; align-items:flex-end; gap:8px; height:120px; padding-top:10px; }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .bar-fill-el{ width:100%; border-radius: 5px 5px 2px 2px; position:relative; }
+  .bar-fill-el.weekend{ background: linear-gradient(180deg, var(--good), rgba(51,214,166,0.5)); }
+  .bar-fill-el.weekday{ background: linear-gradient(180deg, rgba(147,165,184,0.55), rgba(147,165,184,0.25)); }
+  .bar-val{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color: var(--text-dim); }
+  .bar-day{ font-size:10px; font-weight:600; color: var(--text-faint); }
+  .bar-col.weekend .bar-val{ color: var(--good); }
+  .spotlight-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .spotlight{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display:flex; align-items:center; gap:16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .spotlight::before{
+    content:''; position:absolute; inset:0 0 auto 0; height:3px;
+  }
+  .spotlight.bad::before{ background: var(--bad); }
+  .spotlight.warn::before{ background: var(--warn); }
+  .spot-tag{
+    position:absolute; top:10px; right:12px;
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em;
+    text-transform:uppercase; font-weight:600; color: var(--text-faint);
+  }
+  .m-ring{ flex-shrink:0; width:56px; height:56px; position:relative; }
   .m-ring svg{ transform: rotate(-90deg); }
   .m-ring .bg{ stroke: rgba(255,255,255,0.08); }
   .m-ring .fg{ stroke-linecap:round; transition: stroke-dashoffset 0.3s; }
   .m-ring .pct{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600;
   }
   .m-body{ flex:1; min-width:0; }
-  .m-name{ font-size:13px; font-weight:600; color: var(--text-dim); margin-bottom:3px;}
+  .m-name{ font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px;}
   .m-row{ display:flex; align-items:baseline; gap:6px; }
-  .m-actual{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; }
+  .m-actual{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
   .m-target{ font-size:11.5px; color: var(--text-faint); font-weight:500;}
 
   .good .fg{ stroke: var(--good); } .good .pct{ color: var(--good); }
   .warn .fg{ stroke: var(--warn); } .warn .pct{ color: var(--warn); }
   .bad  .fg{ stroke: var(--bad);  } .bad  .pct{ color: var(--bad); }
+
+  /* COMPACT METRIC LIST (everything else) */
+  .metric-list{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+  }
+  .ml-row{
+    display:flex; align-items:center; gap:12px;
+    padding: 9px 18px;
+    border-top: 1px solid var(--line);
+  }
+  .ml-row:first-child{ border-top:none; }
+  .ml-name{ width: 150px; flex-shrink:0; font-size:12.5px; font-weight:600; color: var(--text-dim); }
+  .ml-bar-track{
+    flex:1; height:6px; border-radius:100px; background: rgba(255,255,255,0.06); overflow:hidden;
+  }
+  .ml-bar-fill{ height:100%; border-radius:100px; }
+  .ml-bar-fill.good{ background: var(--good); }
+  .ml-bar-fill.warn{ background: var(--warn); }
+  .ml-bar-fill.bad{ background: var(--bad); }
+  .ml-pct{
+    width:42px; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; flex-shrink:0;
+  }
+  .ml-pct.good{ color: var(--good); }
+  .ml-pct.warn{ color: var(--warn); }
+  .ml-pct.bad{ color: var(--bad); }
+  .ml-nums{
+    width:110px; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--text-faint); flex-shrink:0;
+  }
 
   /* LEADERBOARD — simplified */
   .boards{
@@ -231,49 +309,35 @@
   }
 
   @media (max-width: 760px){
-    .metric-grid{ grid-template-columns: 1fr; }
+    .spotlight-grid{ grid-template-columns: 1fr; }
     .boards{ grid-template-columns: 1fr; }
     .momentum{ grid-template-columns: 1fr; }
+    .trends{ grid-template-columns: 1fr; }
     .brand h1{ font-size:26px; }
+    .ml-name{ width: 110px; }
+  }  .err-banner{
+    background: var(--bad-dim); border:1px solid var(--bad); color: var(--bad);
+    border-radius: 10px; padding: 10px 16px; font-size:12.5px; font-weight:600;
+    margin-bottom: 16px; display:none;
   }
 </style>
 </head>
 <body>
 <div class="wrap">
 
+  <div class="err-banner" id="err-banner"></div>
+
   <header>
     <div class="brand">
       <h1>One<span>Track</span></h1>
       <div class="sub">RCS Sg Bakap Resources</div>
     </div>
-    <div class="daterange">1 Aug — 12 Aug 2026</div>
+    <div class="daterange" id="daterange">Loading…</div>
   </header>
 
   <div class="podium-card">
     <div class="podium-eyebrow">Department Champions</div>
-    <div class="podium">
-      <div class="stand rank2">
-        <div class="dept-tag">Cashier</div>
-        <div class="avatar">M</div>
-        <div class="p-name">Musliha</div>
-        <div class="p-score">318 pts</div>
-        <div class="block"><span class="block-rank">2</span></div>
-      </div>
-      <div class="stand rank1">
-        <div class="dept-tag">NFR</div>
-        <div class="avatar">Z</div>
-        <div class="p-name">Zahra</div>
-        <div class="p-score">1,037 pts</div>
-        <div class="block"><span class="block-rank">1</span></div>
-      </div>
-      <div class="stand rank3">
-        <div class="dept-tag">Forecourt</div>
-        <div class="avatar">M</div>
-        <div class="p-name">Maynul</div>
-        <div class="p-score">145 pts</div>
-        <div class="block"><span class="block-rank">3</span></div>
-      </div>
-    </div>
+    <div class="podium" id="podium"></div>
   </div>
 
   <div class="momentum">
@@ -287,122 +351,387 @@
     </div>
   </div>
 
-  <div class="section-label">Performance vs. Target</div>
-  <div class="metric-grid" id="metrics"></div>
+  <div class="section-label">Trends</div>
+  <div class="trends">
+    <div class="trend-card">
+      <div class="trend-head">
+        <span class="trend-title">Achievement Trend</span>
+        <span class="trend-sub" id="trend-range">1 Jul \u2013 10 Aug</span>
+      </div>
+      <svg id="trend-svg" width="100%" height="130" viewBox="0 0 640 130" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="trend-card">
+      <div class="trend-head">
+        <span class="trend-title">Weekly Rhythm</span>
+        <span class="trend-sub">avg by day</span>
+      </div>
+      <div class="bar-chart" id="weekly-bars"></div>
+    </div>
+  </div>
+
+  <div class="section-label">Needs Attention</div>
+  <div class="spotlight-grid" id="spotlight"></div>
+
+  <div class="section-label">All Metrics</div>
+  <div class="metric-list" id="metric-list"></div>
 
   <div class="section-label">Leaderboard</div>
-  <div class="boards">
-    <div class="board">
-      <div class="board-head">Cashier</div>
-      <div id="lb-cashier"></div>
-    </div>
-    <div class="board">
-      <div class="board-head">Forecourt</div>
-      <div id="lb-forecourt"></div>
-    </div>
-    <div class="board">
-      <div class="board-head">NFR</div>
-      <div id="lb-nfr"></div>
-    </div>
+  <div class="boards" id="boards-wrap">
+    <!-- board columns injected dynamically, one per department -->
   </div>
 
   <footer>
     <div class="shell-badge">S</div>
-    <span>Powered by RCS Club · Built with Google Sheets Data</span>
+    <span id="footer-updated">Powered by RCS Club · Built with Google Sheets Data</span>
   </footer>
 
 </div>
 
 <script>
-  const metrics = [
-    { name:'Promo Item', actual:1503, target:960 },
-    { name:'Combo Bag', actual:72, target:144 },
-    { name:'Customer Service', actual:145, target:84 },
-    { name:'Toys', actual:25, target:84 },
-    { name:'Shell Cafe CPD', actual:1151, target:1440 },
-    { name:'Shell Cafe Combo', actual:794, target:1008 },
-    { name:'Refresh CPD', actual:1202, target:1200 },
-    { name:'Refresh Meal', actual:1222, target:480 },
-    { name:'Five Star Promo', actual:685, target:960 },
-    { name:'Daily Fresh Sales', actual:1677, target:624 },
+  // ============================================================
+  // CONFIG — your Google Sheet
+  // ============================================================
+  const SHEET_ID = '1emJi3yzLscUKdzF48H-fT4RpUn5a-zdR4XnuZLVtynM';
+  const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
+
+  // Metric columns, in the exact order they appear in both
+  // Clean_Daily_Input (starting col index 3) and Clean_Target_Master (starting col index 1)
+  const METRIC_NAMES = [
+    'Combo Bag','Promo Item','Shell Cafe Promo','Shell Cafe CPD','Shell Cafe Combo',
+    'Refresh CPD','Refresh Meal','Five Star Promo','Daily Fresh Sales','Customer Service','Toys'
   ];
 
-  const metricsEl = document.getElementById('metrics');
-  const R = 21, C = 2*Math.PI*R;
+  // ============================================================
+  // gviz fetch helper — turns a tab name into an array of row-arrays
+  // ============================================================
+  async function fetchTab(tabName) {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not load tab "${tabName}" (HTTP ${res.status})`);
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.status === 'error') throw new Error(`Sheet error on "${tabName}": ${parsed.errors?.[0]?.detailed_message || 'unknown'}`);
+    return parsed.table.rows.map(r =>
+      r.c.map(cell => cell ? (cell.v !== undefined ? cell.v : null) : null)
+    );
+  }
 
-  metrics.forEach(m => {
-    const pct = m.actual / m.target;
-    const pctDisplay = Math.round(pct*100);
-    const level = pct >= 1 ? 'good' : pct >= 0.7 ? 'warn' : 'bad';
-    const dash = Math.min(pct,1) * C;
+  function showError(msg) {
+    const el = document.getElementById('err-banner');
+    el.textContent = `⚠ ${msg} — check the sheet is shared as "Anyone with the link → Viewer".`;
+    el.style.display = 'block';
+  }
 
-    const div = document.createElement('div');
-    div.className = `metric ${level}`;
-    div.innerHTML = `
-      <div class="m-ring">
-        <svg width="52" height="52">
-          <circle class="bg" cx="26" cy="26" r="${R}" stroke-width="5" fill="none"/>
-          <circle class="fg" cx="26" cy="26" r="${R}" stroke-width="5" fill="none"
-            stroke-dasharray="${C}" stroke-dashoffset="${C - dash}"/>
-        </svg>
-        <div class="pct">${pctDisplay}%</div>
+  function titleCase(s) {
+    if (!s) return '';
+    return String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase();
+  }
+
+  // ============================================================
+  // MAIN
+  // ============================================================
+  async function loadDashboard() {
+    document.getElementById('err-banner').style.display = 'none';
+
+    const [winners, deptRanking, dailyInput, targetMaster, trend] = await Promise.all([
+      fetchTab('Department_Winners_Clean'),
+      fetchTab('Dept_Ranking_Clean'),
+      fetchTab('Clean_Daily_Input'),
+      fetchTab('Clean_Target_Master'),
+      fetchTab('Achievement_Trend_Clean'),
+    ]);
+
+    renderPodium(winners);
+    renderLeaderboard(deptRanking);
+    renderMetrics(dailyInput, targetMaster);
+    renderTrendAndWeekly(trend);
+    renderMomentum(dailyInput);
+    renderDateRange(dailyInput);
+
+    document.getElementById('footer-updated').textContent =
+      `Powered by RCS Club · Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+  }
+
+  // ---- Header date range, derived from the actual data present ----
+  function renderDateRange(dailyInput) {
+    const dates = dailyInput.map(r => r[0]).filter(Boolean).map(d => new Date(d));
+    if (!dates.length) return;
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
+    const fmt = d => d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    document.getElementById('daterange').textContent = `${fmt(min)} — ${fmt(max)}`;
+  }
+
+  // ---- Podium: Rank 1 per department from Department_Winners_Clean ----
+  // cols: [Department, Rank, Medal, Shortname, Full Name, Total Items, Photo URL, ...]
+  function renderPodium(winners) {
+    const champions = winners
+      .filter(r => r[1] === 1)
+      .map(r => ({ dept: r[0], name: r[3], score: r[5] || 0 }))
+      .sort((a,b) => b.score - a.score);
+
+    // Center = highest score, left = 2nd, right = 3rd (Olympic-style)
+    const ordered = champions.length === 3
+      ? [champions[1], champions[0], champions[2]]
+      : champions;
+    const rankClasses = champions.length === 3 ? ['rank2','rank1','rank3'] : champions.map((_,i)=>`rank${i+1}`);
+    const displayRank = champions.length === 3 ? [2,1,3] : champions.map((_,i)=>i+1);
+
+    const el = document.getElementById('podium');
+    el.innerHTML = ordered.map((c, i) => `
+      <div class="stand ${rankClasses[i]}">
+        <div class="dept-tag">${titleCase(c.dept)}</div>
+        <div class="avatar">${(c.name||'?').charAt(0)}</div>
+        <div class="p-name">${titleCase(c.name)}</div>
+        <div class="p-score">${(c.score||0).toLocaleString()} pts</div>
+        <div class="block"><span class="block-rank">${displayRank[i]}</span></div>
       </div>
-      <div class="m-body">
-        <div class="m-name">${m.name}</div>
-        <div class="m-row">
-          <span class="m-actual">${m.actual.toLocaleString()}</span>
-          <span class="m-target">/ ${m.target.toLocaleString()}</span>
-        </div>
-      </div>
-    `;
-    metricsEl.appendChild(div);
-  });
+    `).join('');
+  }
 
-  // Leaderboard data with gap-to-next-rank computed inline
-  const boards = {
-    'lb-cashier': [['Musliha',318],['Hazirah',305],['Hayati',291],['Aina',276],['Rakib',97]],
-    'lb-forecourt': [['Maynul',145],['Ajay',143],['Santosh',58],['Lokendra',55],['Niraj',41]],
-    'lb-nfr': [['Zahra',1037],['Puja',833],['Suriya',601],['Nazmul',600],['Santa',579]],
-  };
-
-  Object.entries(boards).forEach(([id, rows]) => {
-    const el = document.getElementById(id);
-    rows.forEach((r,i) => {
-      const row = document.createElement('div');
-      row.className = `row r${i+1}`;
-      const gap = i === 0 ? '' : `+${(rows[i-1][1]-r[1]).toLocaleString()} to #${i}`;
-      row.innerHTML = `<div class="rk">${i+1}</div><div class="rname">${r[0]}</div><div class="rgap ${i===0?'first':''}">${i===0?'Leader':gap}</div><div class="rscore">${r[1].toLocaleString()}</div>`;
-      el.appendChild(row);
+  // ---- Leaderboard: one board per department, top 5, gap-to-next-rank ----
+  // Dept_Ranking_Clean cols: [Shortname, Department, Score, Rank, Medal, PhotoURL, FullName]
+  function renderLeaderboard(deptRanking) {
+    const byDept = {};
+    deptRanking.forEach(r => {
+      const dept = r[1];
+      if (!dept) return;
+      if (!byDept[dept]) byDept[dept] = [];
+      byDept[dept].push({ name: r[0], score: r[2] || 0 });
     });
-  });
 
-  // Most Improved (mock: % growth this week)
-  const improved = [
-    ['Rakib', '+186%'],
-    ['Puja', '+64%'],
-    ['Ajay', '+41%'],
-  ];
-  const improvedEl = document.getElementById('mom-improved');
-  improved.forEach(([name,val]) => {
-    const row = document.createElement('div');
-    row.className = 'mom-row';
-    row.innerHTML = `<span class="mom-name">${name}</span><span class="mom-val up">${val}</span>`;
-    improvedEl.appendChild(row);
-  });
+    const wrap = document.getElementById('boards-wrap');
+    wrap.innerHTML = '';
+    Object.entries(byDept).forEach(([dept, rows]) => {
+      const top5 = rows.sort((a,b) => b.score - a.score).slice(0, 5);
+      const board = document.createElement('div');
+      board.className = 'board';
+      const rowsHtml = top5.map((r,i) => {
+        const gap = i === 0 ? 'Leader' : `+${(top5[i-1].score - r.score).toLocaleString()} to #${i}`;
+        return `<div class="row r${i+1}">
+          <div class="rk">${i+1}</div>
+          <div class="rname">${titleCase(r.name)}</div>
+          <div class="rgap ${i===0?'first':''}">${gap}</div>
+          <div class="rscore">${r.score.toLocaleString()}</div>
+        </div>`;
+      }).join('');
+      board.innerHTML = `<div class="board-head">${titleCase(dept)}</div>${rowsHtml}`;
+      wrap.appendChild(board);
+    });
+  }
 
-  // Streaks (mock: consecutive days hitting target)
-  const streaks = [
-    ['Zahra', 12],
-    ['Musliha', 8],
-    ['Maynul', 5],
-  ];
-  const streaksEl = document.getElementById('mom-streaks');
-  streaks.forEach(([name,days]) => {
-    const row = document.createElement('div');
-    row.className = 'mom-row';
-    row.innerHTML = `<span class="mom-name">${name}</span><span class="mom-val flame">🔥 ${days}d</span>`;
-    streaksEl.appendChild(row);
+  // ---- Performance vs Target: sum actuals (daily input) vs sum targets (target master) ----
+  function renderMetrics(dailyInput, targetMaster) {
+    const actualTotals = METRIC_NAMES.map(() => 0);
+    dailyInput.forEach(row => {
+      METRIC_NAMES.forEach((_, i) => {
+        const v = row[3 + i];
+        if (typeof v === 'number') actualTotals[i] += v;
+      });
+    });
+
+    const targetTotals = METRIC_NAMES.map(() => 0);
+    targetMaster.forEach(row => {
+      METRIC_NAMES.forEach((_, i) => {
+        const v = row[1 + i];
+        if (typeof v === 'number') targetTotals[i] += v;
+      });
+    });
+
+    const metrics = METRIC_NAMES
+      .map((name, i) => ({ name, actual: actualTotals[i], target: targetTotals[i] }))
+      .filter(m => m.target > 0);
+
+    const ranked = metrics
+      .map(m => ({ ...m, pct: m.actual / m.target }))
+      .sort((a,b) => a.pct - b.pct);
+
+    const spotlightCount = Math.min(3, ranked.length);
+    const spotlightItems = ranked.slice(0, spotlightCount);
+    const listItems = ranked.slice(spotlightCount);
+    const R = 22, C = 2*Math.PI*R;
+
+    const spotlightEl = document.getElementById('spotlight');
+    spotlightEl.innerHTML = '';
+    spotlightItems.forEach(m => {
+      const pctDisplay = Math.round(m.pct*100);
+      const level = m.pct >= 1 ? 'good' : m.pct >= 0.7 ? 'warn' : 'bad';
+      const dash = Math.min(m.pct,1) * C;
+      const div = document.createElement('div');
+      div.className = `spotlight ${level}`;
+      div.innerHTML = `
+        <span class="spot-tag">${level === 'bad' ? 'Below target' : 'Watch'}</span>
+        <div class="m-ring">
+          <svg width="56" height="56">
+            <circle class="bg" cx="28" cy="28" r="${R}" stroke-width="5" fill="none"/>
+            <circle class="fg ${level}" cx="28" cy="28" r="${R}" stroke-width="5" fill="none"
+              stroke-dasharray="${C}" stroke-dashoffset="${C - dash}"/>
+          </svg>
+          <div class="pct">${pctDisplay}%</div>
+        </div>
+        <div class="m-body">
+          <div class="m-name">${m.name}</div>
+          <div class="m-row">
+            <span class="m-actual">${Math.round(m.actual).toLocaleString()}</span>
+            <span class="m-target">/ ${Math.round(m.target).toLocaleString()}</span>
+          </div>
+        </div>
+      `;
+      spotlightEl.appendChild(div);
+    });
+
+    const listEl = document.getElementById('metric-list');
+    listEl.innerHTML = '';
+    listItems.forEach(m => {
+      const pctDisplay = Math.round(m.pct*100);
+      const level = m.pct >= 1 ? 'good' : m.pct >= 0.7 ? 'warn' : 'bad';
+      const barWidth = Math.min(m.pct,1) * 100;
+      const row = document.createElement('div');
+      row.className = 'ml-row';
+      row.innerHTML = `
+        <div class="ml-name">${m.name}</div>
+        <div class="ml-bar-track"><div class="ml-bar-fill ${level}" style="width:${barWidth}%"></div></div>
+        <div class="ml-pct ${level}">${pctDisplay}%</div>
+        <div class="ml-nums">${Math.round(m.actual).toLocaleString()} / ${Math.round(m.target).toLocaleString()}</div>
+      `;
+      listEl.appendChild(row);
+    });
+  }
+
+  // ---- Trends: Achievement_Trend_Clean cols [Date, Achievement fraction] ----
+  function renderTrendAndWeekly(trend) {
+    const rows = trend.filter(r => r[0] && typeof r[1] === 'number');
+    const trendDates = rows.map(r => new Date(r[0]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
+    const trendVals = rows.map(r => r[1] * 100);
+
+    document.getElementById('trend-range').textContent =
+      rows.length ? `${trendDates[0]} – ${trendDates[trendDates.length-1]}` : '';
+
+    const svg = document.getElementById('trend-svg');
+    const W = 640, H = 130, padL = 4, padR = 4, padT = 10, padB = 18;
+    const capMax = 200;
+    const capped = trendVals.map(v => Math.min(v, capMax));
+    const n = capped.length;
+    if (n < 2) { svg.innerHTML = ''; return; }
+    const x = i => padL + (i/(n-1)) * (W - padL - padR);
+    const y = v => padT + (1 - v/capMax) * (H - padT - padB);
+
+    let pathD = capped.map((v,i)=> `${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+    let fillD = pathD + ` L ${x(n-1).toFixed(1)} ${y(0).toFixed(1)} L ${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#33D6A6" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#33D6A6" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="${padL}" y1="${y(100).toFixed(1)}" x2="${W-padR}" y2="${y(100).toFixed(1)}" class="avg-line"/>
+      <text x="${W-padR}" y="${y(100)-4}" text-anchor="end" class="axis-label">100% target</text>
+      <path d="${fillD}" class="line-fill"/>
+      <path d="${pathD}" class="line-path"/>
+      ${capped.map((v,i) => i % 4 === 0 || i === n-1 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" class="line-dot"/>` : '').join('')}
+      <text x="${padL}" y="${H-4}" class="axis-label">${trendDates[0]}</text>
+      <text x="${W-padR}" y="${H-4}" text-anchor="end" class="axis-label">${trendDates[n-1]}</text>
+    `;
+
+    // Weekly rhythm — average by day of week across all rows
+    const order = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const sums = order.map(()=>0), counts = order.map(()=>0);
+    rows.forEach(r => {
+      const dow = new Date(r[0]).getDay();
+      sums[dow] += r[1]*100; counts[dow]++;
+    });
+    const mondayFirst = [1,2,3,4,5,6,0];
+    const weeklyRhythm = mondayFirst.map(dow => ({
+      day: order[dow],
+      val: counts[dow] ? sums[dow]/counts[dow] : 0,
+      weekend: dow === 0 || dow === 6,
+    }));
+
+    const barsEl = document.getElementById('weekly-bars');
+    barsEl.innerHTML = '';
+    const maxV = Math.max(...weeklyRhythm.map(d=>d.val), 1);
+    weeklyRhythm.forEach(d => {
+      const h = (d.val / maxV) * 100;
+      const col = document.createElement('div');
+      col.className = `bar-col ${d.weekend ? 'weekend' : ''}`;
+      col.innerHTML = `
+        <span class="bar-val">${Math.round(d.val)}%</span>
+        <div class="bar-fill-el ${d.weekend ? 'weekend' : 'weekday'}" style="height:${h}%"></div>
+        <span class="bar-day">${d.day}</span>
+      `;
+      barsEl.appendChild(col);
+    });
+  }
+
+  // ---- Momentum: Most Improved (last 7 days vs prior 7) + Streaks (consecutive active days) ----
+  // NOTE: approximated from available data — see chat notes on definitions used.
+  function renderMomentum(dailyInput) {
+    const rows = dailyInput.filter(r => r[0] && r[1]);
+    const byPerson = {};
+    rows.forEach(r => {
+      const name = r[1];
+      const date = new Date(r[0]);
+      const actual = typeof r[14] === 'number' ? r[14] : 0;
+      if (!byPerson[name]) byPerson[name] = [];
+      byPerson[name].push({ date, actual });
+    });
+
+    const allDates = rows.map(r => new Date(r[0]));
+    const maxDate = new Date(Math.max(...allDates));
+    const cutoff7 = new Date(maxDate); cutoff7.setDate(cutoff7.getDate() - 7);
+    const cutoff14 = new Date(maxDate); cutoff14.setDate(cutoff14.getDate() - 14);
+
+    // Most improved: sum(last 7d) vs sum(prior 7d)
+    const improved = Object.entries(byPerson).map(([name, entries]) => {
+      const recent = entries.filter(e => e.date > cutoff7).reduce((s,e)=>s+e.actual,0);
+      const prior = entries.filter(e => e.date > cutoff14 && e.date <= cutoff7).reduce((s,e)=>s+e.actual,0);
+      const growth = prior > 0 ? ((recent - prior) / prior) * 100 : (recent > 0 ? 100 : 0);
+      return { name, growth, recent, prior };
+    }).filter(x => x.prior > 0 && x.recent > 0)
+      .sort((a,b) => b.growth - a.growth)
+      .slice(0, 3);
+
+    const improvedEl = document.getElementById('mom-improved');
+    improvedEl.innerHTML = improved.length ? improved.map(x => `
+      <div class="mom-row"><span class="mom-name">${titleCase(x.name)}</span><span class="mom-val up">+${Math.round(x.growth)}%</span></div>
+    `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">Not enough history yet</span></div>`;
+
+    // Streaks: consecutive most-recent days present with actual > 0
+    const streaks = Object.entries(byPerson).map(([name, entries]) => {
+      const days = [...new Set(entries.filter(e=>e.actual>0).map(e => e.date.toDateString()))]
+        .map(d => new Date(d)).sort((a,b)=>b-a);
+      let streak = 0;
+      let cursor = new Date(maxDate);
+      const daySet = new Set(days.map(d=>d.toDateString()));
+      while (daySet.has(cursor.toDateString())) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      return { name, streak };
+    }).filter(x => x.streak >= 2)
+      .sort((a,b) => b.streak - a.streak)
+      .slice(0, 3);
+
+    const streaksEl = document.getElementById('mom-streaks');
+    streaksEl.innerHTML = streaks.length ? streaks.map(x => `
+      <div class="mom-row"><span class="mom-name">${titleCase(x.name)}</span><span class="mom-val flame">🔥 ${x.streak}d</span></div>
+    `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No active streaks yet</span></div>`;
+  }
+
+  // ============================================================
+  loadDashboard().catch(err => {
+    console.error(err);
+    showError(err.message || 'Could not load the dashboard data');
   });
+  setInterval(() => {
+    loadDashboard().catch(err => {
+      console.error(err);
+      showError(err.message || 'Could not refresh dashboard data');
+    });
+  }, REFRESH_MS);
 </script>
 
 </body>
