@@ -102,13 +102,21 @@
     font-size:10.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
     color: var(--text-faint); margin-bottom:10px;
   }
+  .avatar-wrap{ position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+  .wreath{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
+  .wreath svg{ width:100%; height:100%; display:block; }
+  .wreath ellipse, .wreath path{ fill: currentColor; stroke: currentColor; }
+  .wreath path{ fill:none; stroke-width:1.4; opacity:0.85; }
+  .stand.rank1 .wreath{ width:116px; height:116px; color: var(--brand); }
+  .stand.rank2 .wreath{ width:98px; height:98px; color: var(--silver); }
+  .stand.rank3 .wreath{ width:98px; height:98px; color: var(--bronze); }
   .avatar{
     width:64px; height:64px; border-radius:50%;
     background: linear-gradient(145deg,#2A3F52,#1A2C3C);
     display:flex; align-items:center; justify-content:center;
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px;
     color:var(--text); border:3px solid var(--card);
-    margin-bottom:8px; position:relative; z-index:2;
+    position:relative; z-index:2;
     overflow:hidden;
   }
   .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
@@ -485,6 +493,25 @@
     return key ? `<span class="icon ${cls||''}">${ICONS[key]}</span>` : '';
   }
 
+  // Decorative laurel wreath, drawn behind podium avatars. Generic laurel-leaf motif
+  // (not any brand/trademarked artwork) — color set via CSS `color` on the wrapper.
+  const WREATH_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 40.9 83.8 L 27.5 76.8 L 18.3 64.8 L 15.0 50.0 L 18.3 35.2 L 26.6 24.0"/>
+    <path d="M 59.1 83.8 L 72.5 76.8 L 81.7 64.8 L 85.0 50.0 L 81.7 35.2 L 73.4 24.0"/>
+    <ellipse cx="39.6" cy="88.6" rx="6.2" ry="2.4" transform="rotate(195 39.6 88.6)"/>
+    <ellipse cx="24.3" cy="80.6" rx="6.2" ry="2.4" transform="rotate(220 24.3 80.6)"/>
+    <ellipse cx="13.7" cy="66.9" rx="6.2" ry="2.4" transform="rotate(245 13.7 66.9)"/>
+    <ellipse cx="10.0" cy="50.0" rx="6.2" ry="2.4" transform="rotate(270 10.0 50.0)"/>
+    <ellipse cx="13.7" cy="33.1" rx="6.2" ry="2.4" transform="rotate(295 13.7 33.1)"/>
+    <ellipse cx="23.2" cy="20.3" rx="6.2" ry="2.4" transform="rotate(318 23.2 20.3)"/>
+    <ellipse cx="60.4" cy="88.6" rx="6.2" ry="2.4" transform="rotate(165 60.4 88.6)"/>
+    <ellipse cx="75.7" cy="80.6" rx="6.2" ry="2.4" transform="rotate(140 75.7 80.6)"/>
+    <ellipse cx="86.3" cy="66.9" rx="6.2" ry="2.4" transform="rotate(115 86.3 66.9)"/>
+    <ellipse cx="90.0" cy="50.0" rx="6.2" ry="2.4" transform="rotate(90 90.0 50.0)"/>
+    <ellipse cx="86.3" cy="33.1" rx="6.2" ry="2.4" transform="rotate(65 86.3 33.1)"/>
+    <ellipse cx="76.8" cy="20.3" rx="6.2" ry="2.4" transform="rotate(42 76.8 20.3)"/>
+  </svg>`;
+
   // Circular avatar with a real photo (from the sheet's Photo URL column) and
   // an initials fallback if the URL is blank or fails to load.
   function avatarHTML(name, photoUrl, extraClass) {
@@ -493,7 +520,10 @@
       ? `<img src="${photoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
       : '';
     const fallbackDisplay = photoUrl ? '' : 'style="display:flex"';
-    return `<div class="avatar ${extraClass||''}">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>`;
+    return `<div class="avatar-wrap">
+      <div class="wreath">${WREATH_SVG}</div>
+      <div class="avatar ${extraClass||''}">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>
+    </div>`;
   }
   function miniAvatarHTML(name, photoUrl) {
     const initial = (name || '?').charAt(0).toUpperCase();
