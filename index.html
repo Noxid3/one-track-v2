@@ -26,6 +26,8 @@
     --silver: #C9D3DC;
     --bronze: #D89A6A;
     --shell-red: #EC1C24;
+    --brand: #FBCE07;
+    --brand-dim: rgba(251,206,7,0.14);
     --flame: #F5824E;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -45,17 +47,24 @@
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom: 26px; flex-wrap:wrap; gap:14px;
   }
+  .brand-row{ display:flex; align-items:center; gap:10px; }
+  .brand-logo{ height:30px; width:auto; display:none; }
   .brand{ display:flex; align-items:baseline; gap:14px; }
   .brand h1{
     font-family:'Space Grotesk', sans-serif;
     font-size: 34px; font-weight:700; letter-spacing:-0.02em;
     color: var(--text);
+    position:relative;
+  }
+  .brand h1::after{
+    content:''; position:absolute; left:1px; bottom:-4px; width:34px; height:3px;
+    border-radius:2px; background: var(--brand);
   }
   .brand h1 span{ color: var(--good); }
   .brand .sub{ color: var(--text-dim); font-size: 13.5px; font-weight:500; }
   .daterange{
     background: var(--card);
-    border:1px solid var(--line);
+    border:1px solid rgba(251,206,7,0.18);
     padding: 9px 16px;
     border-radius: 100px;
     font-size: 13px;
@@ -100,8 +109,11 @@
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px;
     color:var(--text); border:3px solid var(--card);
     margin-bottom:8px; position:relative; z-index:2;
+    overflow:hidden;
   }
-  .stand.rank1 .avatar{ border-color: var(--gold); box-shadow:0 0 0 3px rgba(232,196,104,0.25); width:76px;height:76px;font-size:24px;}
+  .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .avatar .avatar-fallback{ display:none; align-items:center; justify-content:center; width:100%; height:100%; }
+  .stand.rank1 .avatar{ border-color: var(--brand); box-shadow:0 0 0 3px rgba(251,206,7,0.25); width:76px;height:76px;font-size:24px;}
   .stand.rank2 .avatar{ border-color: var(--silver); }
   .stand.rank3 .avatar{ border-color: var(--bronze); }
   .p-name{ font-weight:700; font-size:14.5px; margin-bottom:2px;}
@@ -111,7 +123,7 @@
     font-family:'Space Grotesk',sans-serif; font-weight:700; color: rgba(255,255,255,0.35);
     display:block; padding-top:10px; font-size:14px;
   }
-  .rank1 .block{ height:78px; background: linear-gradient(180deg, rgba(232,196,104,0.22), rgba(232,196,104,0.05)); border-top:2px solid var(--gold);}
+  .rank1 .block{ height:78px; background: linear-gradient(180deg, rgba(251,206,7,0.22), rgba(251,206,7,0.05)); border-top:2px solid var(--brand);}
   .rank2 .block{ height:54px; background: linear-gradient(180deg, rgba(201,211,220,0.16), rgba(201,211,220,0.04)); border-top:2px solid var(--silver);}
   .rank3 .block{ height:40px; background: linear-gradient(180deg, rgba(216,154,106,0.18), rgba(216,154,106,0.04)); border-top:2px solid var(--bronze);}
 
@@ -120,7 +132,13 @@
     font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
     color: var(--text-faint); font-weight:600;
     margin: 26px 0 12px 2px;
+    display:flex; align-items:center; gap:8px;
   }
+  .section-label::before{ content:''; width:10px; height:2px; background: var(--brand); border-radius:2px; flex-shrink:0; }
+
+  /* small line-icon wrapper used for metric icons + momentum headers */
+  .icon{ display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .icon svg{ width:100%; height:100%; }
 
   /* MOMENTUM ROW */
   .momentum{
@@ -221,7 +239,8 @@
     font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600;
   }
   .m-body{ flex:1; min-width:0; }
-  .m-name{ font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px;}
+  .m-name{ font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px; display:flex; align-items:center; gap:6px;}
+  .m-name .icon{ width:14px; height:14px; color: var(--text-faint); }
   .m-row{ display:flex; align-items:baseline; gap:6px; }
   .m-actual{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
   .m-target{ font-size:11.5px; color: var(--text-faint); font-weight:500;}
@@ -243,7 +262,8 @@
     border-top: 1px solid var(--line);
   }
   .ml-row:first-child{ border-top:none; }
-  .ml-name{ width: 150px; flex-shrink:0; font-size:12.5px; font-weight:600; color: var(--text-dim); }
+  .ml-name{ width: 150px; flex-shrink:0; font-size:12.5px; font-weight:600; color: var(--text-dim); display:flex; align-items:center; gap:8px; }
+  .ml-name .icon{ width:15px; height:15px; color: var(--text-faint); }
   .ml-bar-track{
     flex:1; height:6px; border-radius:100px; background: rgba(255,255,255,0.06); overflow:hidden;
   }
@@ -290,9 +310,17 @@
     width:16px; text-align:center; font-family:'IBM Plex Mono',monospace;
     font-weight:600; font-size:11px; color: var(--text-faint); flex-shrink:0;
   }
-  .row.r1 .rk{ color: var(--gold); }
+  .row.r1 .rk{ color: var(--brand); }
   .row.r2 .rk{ color: var(--silver); }
   .row.r3 .rk{ color: var(--bronze); }
+  .r-avatar{
+    width:22px; height:22px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background: linear-gradient(145deg,#2A3F52,#1A2C3C);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10px; color:var(--text-dim);
+  }
+  .r-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .r-avatar .avatar-fallback{ display:none; align-items:center; justify-content:center; width:100%; height:100%; }
   .rname{ flex:1; font-weight:600; color: var(--text); min-width:0; }
   .rscore{ font-family:'IBM Plex Mono',monospace; font-weight:600; color: var(--text-dim); font-size:11.5px; text-align:right; }
   .rgap{ font-family:'IBM Plex Mono',monospace; font-size:10px; color: var(--text-faint); text-align:right; min-width:52px; }
@@ -328,9 +356,12 @@
   <div class="err-banner" id="err-banner"></div>
 
   <header>
-    <div class="brand">
-      <h1>One<span>Track</span></h1>
-      <div class="sub">RCS Sg Bakap Resources</div>
+    <div class="brand-row">
+      <img src="./assets/shell-logo.png" class="brand-logo" id="brand-logo" alt="" onerror="this.style.display='none'" onload="this.style.display='block'">
+      <div class="brand">
+        <h1>One<span>Track</span></h1>
+        <div class="sub">RCS Sg Bakap Resources</div>
+      </div>
     </div>
     <div class="daterange" id="daterange">Loading…</div>
   </header>
@@ -342,11 +373,11 @@
 
   <div class="momentum">
     <div class="mom-card">
-      <div class="mom-head"><span class="ic">📈</span> Most Improved — this week</div>
+      <div class="mom-head"><span class="icon" id="ic-improved" style="width:16px;height:16px;color:var(--good)"></span> Most Improved — this week</div>
       <div id="mom-improved"></div>
     </div>
     <div class="mom-card">
-      <div class="mom-head"><span class="ic">🔥</span> Hot Streaks</div>
+      <div class="mom-head"><span class="icon" id="ic-streak" style="width:16px;height:16px;color:var(--flame)"></span> Hot Streaks</div>
       <div id="mom-streaks"></div>
     </div>
   </div>
@@ -428,6 +459,51 @@
     return String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase();
   }
 
+  // Small generic line-icon set (stroke=currentColor, 24x24 viewBox), used for metrics + momentum headers.
+  const ICONS = {
+    bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+    tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3h7a2 2 0 0 1 2 2v7a2 2 0 0 1-.6 1.4l-8 8a2 2 0 0 1-2.8 0l-6-6a2 2 0 0 1 0-2.8l8-8A2 2 0 0 1 11 3z"/><circle cx="16" cy="8" r="1.3" fill="currentColor" stroke="none"/></svg>',
+    cup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h11v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 5.5c0 1-1 1-1 2M12 5.5c0 1-1 1-1 2"/></svg>',
+    combo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="14" r="5"/><path d="M15 8h4v9a3 3 0 0 1-3 3h-1V8z"/></svg>',
+    droplet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
+    meal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v7a2 2 0 0 0 2 2v9M7 3v9M9 3v7M17 3c-1.5 0-2 2-2 4s.5 4 2 4v9"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6L12 3z"/></svg>',
+    leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C10 4 4 10 4 18c8 0 14-6 14-14z"/><path d="M5 19c4-4 8-8 14-14"/></svg>',
+    headset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19v1a3 3 0 0 1-3 3h-3"/></svg>',
+    block: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5L12 12l8-4.5M12 12v9"/></svg>',
+    trending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+    flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.7 7-6.8 0-3-2-5-3.2-7.2C15 6.5 15 4.5 14 2c-1 2-3.5 4-4.5 7-1 3-4 4.6-4 8.2C5.5 19.3 8 22 12 22z"/><path d="M12 18c1.7 0 3-1.2 3-3 0-1.5-1-2.4-1.6-3.6-.4.8-1.4 1.4-2 2.4-.6 1-1.4 1.6-1.4 3.2 0 1.8 1.3 3 2 3z" fill="currentColor" stroke="none" opacity="0.35"/></svg>',
+  };
+  // Map each metric name to an icon key
+  const METRIC_ICON = {
+    'Combo Bag': 'bag', 'Promo Item': 'tag', 'Shell Cafe Promo': 'cup', 'Shell Cafe CPD': 'cup',
+    'Shell Cafe Combo': 'combo', 'Refresh CPD': 'droplet', 'Refresh Meal': 'meal',
+    'Five Star Promo': 'star', 'Daily Fresh Sales': 'leaf', 'Customer Service': 'headset', 'Toys': 'block',
+  };
+  function iconFor(name, cls) {
+    const key = METRIC_ICON[name];
+    return key ? `<span class="icon ${cls||''}">${ICONS[key]}</span>` : '';
+  }
+
+  // Circular avatar with a real photo (from the sheet's Photo URL column) and
+  // an initials fallback if the URL is blank or fails to load.
+  function avatarHTML(name, photoUrl, extraClass) {
+    const initial = (name || '?').charAt(0).toUpperCase();
+    const img = photoUrl
+      ? `<img src="${photoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      : '';
+    const fallbackDisplay = photoUrl ? '' : 'style="display:flex"';
+    return `<div class="avatar ${extraClass||''}">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>`;
+  }
+  function miniAvatarHTML(name, photoUrl) {
+    const initial = (name || '?').charAt(0).toUpperCase();
+    const img = photoUrl
+      ? `<img src="${photoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      : '';
+    const fallbackDisplay = photoUrl ? '' : 'style="display:flex"';
+    return `<div class="r-avatar">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>`;
+  }
+
   // gviz encodes Date-typed cells as strings like "Date(2026,7,10)" (month is 0-indexed),
   // not ISO strings — new Date() on that raw string silently returns Invalid Date.
   function parseGvizDate(v) {
@@ -481,7 +557,7 @@
   function renderPodium(winners) {
     const champions = winners
       .filter(r => r[1] === 1)
-      .map(r => ({ dept: r[0], name: r[3], score: r[5] || 0 }))
+      .map(r => ({ dept: r[0], name: r[3], score: r[5] || 0, photo: r[6] || '' }))
       .sort((a,b) => b.score - a.score);
 
     // Center = highest score, left = 2nd, right = 3rd (Olympic-style)
@@ -495,7 +571,7 @@
     el.innerHTML = ordered.map((c, i) => `
       <div class="stand ${rankClasses[i]}">
         <div class="dept-tag">${titleCase(c.dept)}</div>
-        <div class="avatar">${(c.name||'?').charAt(0)}</div>
+        ${avatarHTML(c.name, c.photo)}
         <div class="p-name">${titleCase(c.name)}</div>
         <div class="p-score">${(c.score||0).toLocaleString()} pts</div>
         <div class="block"><span class="block-rank">${displayRank[i]}</span></div>
@@ -511,7 +587,7 @@
       const dept = r[1];
       if (!dept) return;
       if (!byDept[dept]) byDept[dept] = [];
-      byDept[dept].push({ name: r[0], score: r[2] || 0 });
+      byDept[dept].push({ name: r[0], score: r[2] || 0, photo: r[5] || '' });
     });
 
     const wrap = document.getElementById('boards-wrap');
@@ -524,6 +600,7 @@
         const gap = i === 0 ? 'Leader' : `+${(top5[i-1].score - r.score).toLocaleString()} to #${i}`;
         return `<div class="row r${i+1}">
           <div class="rk">${i+1}</div>
+          ${miniAvatarHTML(r.name, r.photo)}
           <div class="rname">${titleCase(r.name)}</div>
           <div class="rgap ${i===0?'first':''}">${gap}</div>
           <div class="rscore">${r.score.toLocaleString()}</div>
@@ -584,7 +661,7 @@
           <div class="pct">${pctDisplay}%</div>
         </div>
         <div class="m-body">
-          <div class="m-name">${m.name}</div>
+          <div class="m-name">${iconFor(m.name)}${m.name}</div>
           <div class="m-row">
             <span class="m-actual">${Math.round(m.actual).toLocaleString()}</span>
             <span class="m-target">/ ${Math.round(m.target).toLocaleString()}</span>
@@ -603,7 +680,7 @@
       const row = document.createElement('div');
       row.className = 'ml-row';
       row.innerHTML = `
-        <div class="ml-name">${m.name}</div>
+        <div class="ml-name">${iconFor(m.name)}${m.name}</div>
         <div class="ml-bar-track"><div class="ml-bar-fill ${level}" style="width:${barWidth}%"></div></div>
         <div class="ml-pct ${level}">${pctDisplay}%</div>
         <div class="ml-nums">${Math.round(m.actual).toLocaleString()} / ${Math.round(m.target).toLocaleString()}</div>
