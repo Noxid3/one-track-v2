@@ -428,6 +428,19 @@
     return String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase();
   }
 
+  // gviz encodes Date-typed cells as strings like "Date(2026,7,10)" (month is 0-indexed),
+  // not ISO strings — new Date() on that raw string silently returns Invalid Date.
+  function parseGvizDate(v) {
+    if (v == null) return null;
+    if (v instanceof Date) return v;
+    const m = String(v).match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+    if (m) {
+      return new Date(+m[1], +m[2], +m[3], +m[4]||0, +m[5]||0, +m[6]||0);
+    }
+    const d = new Date(v);
+    return isNaN(d) ? null : d;
+  }
+
   // ============================================================
   // MAIN
   // ============================================================
@@ -455,7 +468,7 @@
 
   // ---- Header date range, derived from the actual data present ----
   function renderDateRange(dailyInput) {
-    const dates = dailyInput.map(r => r[0]).filter(Boolean).map(d => new Date(d));
+    const dates = dailyInput.map(r => parseGvizDate(r[0])).filter(Boolean);
     if (!dates.length) return;
     const min = new Date(Math.min(...dates));
     const max = new Date(Math.max(...dates));
@@ -601,9 +614,11 @@
 
   // ---- Trends: Achievement_Trend_Clean cols [Date, Achievement fraction] ----
   function renderTrendAndWeekly(trend) {
-    const rows = trend.filter(r => r[0] && typeof r[1] === 'number');
-    const trendDates = rows.map(r => new Date(r[0]).toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
-    const trendVals = rows.map(r => r[1] * 100);
+    const rows = trend
+      .map(r => ({ date: parseGvizDate(r[0]), pct: r[1] }))
+      .filter(r => r.date && typeof r.pct === 'number');
+    const trendDates = rows.map(r => r.date.toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
+    const trendVals = rows.map(r => r.pct * 100);
 
     document.getElementById('trend-range').textContent =
       rows.length ? `${trendDates[0]} – ${trendDates[trendDates.length-1]}` : '';
@@ -640,8 +655,8 @@
     const order = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const sums = order.map(()=>0), counts = order.map(()=>0);
     rows.forEach(r => {
-      const dow = new Date(r[0]).getDay();
-      sums[dow] += r[1]*100; counts[dow]++;
+      const dow = r.date.getDay();
+      sums[dow] += r.pct*100; counts[dow]++;
     });
     const mondayFirst = [1,2,3,4,5,6,0];
     const weeklyRhythm = mondayFirst.map(dow => ({
@@ -669,18 +684,23 @@
   // ---- Momentum: Most Improved (last 7 days vs prior 7) + Streaks (consecutive active days) ----
   // NOTE: approximated from available data — see chat notes on definitions used.
   function renderMomentum(dailyInput) {
-    const rows = dailyInput.filter(r => r[0] && r[1]);
+    const rows = dailyInput
+      .map(r => ({ date: parseGvizDate(r[0]), name: r[1], actual: typeof r[14] === 'number' ? r[14] : 0 }))
+      .filter(r => r.date && r.name);
+
+    if (!rows.length) {
+      document.getElementById('mom-improved').innerHTML = `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No data yet</span></div>`;
+      document.getElementById('mom-streaks').innerHTML = `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No data yet</span></div>`;
+      return;
+    }
+
     const byPerson = {};
     rows.forEach(r => {
-      const name = r[1];
-      const date = new Date(r[0]);
-      const actual = typeof r[14] === 'number' ? r[14] : 0;
-      if (!byPerson[name]) byPerson[name] = [];
-      byPerson[name].push({ date, actual });
+      if (!byPerson[r.name]) byPerson[r.name] = [];
+      byPerson[r.name].push(r);
     });
 
-    const allDates = rows.map(r => new Date(r[0]));
-    const maxDate = new Date(Math.max(...allDates));
+    const maxDate = new Date(Math.max(...rows.map(r => r.date)));
     const cutoff7 = new Date(maxDate); cutoff7.setDate(cutoff7.getDate() - 7);
     const cutoff14 = new Date(maxDate); cutoff14.setDate(cutoff14.getDate() - 14);
 
@@ -699,14 +719,15 @@
       <div class="mom-row"><span class="mom-name">${titleCase(x.name)}</span><span class="mom-val up">+${Math.round(x.growth)}%</span></div>
     `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">Not enough history yet</span></div>`;
 
-    // Streaks: consecutive most-recent days present with actual > 0
+    // Streaks: consecutive most-recent days present with actual > 0.
+    // Hard-capped at 90 iterations so a data gap or bad date can never hang the tab.
+    const MAX_STREAK_CHECK = 90;
     const streaks = Object.entries(byPerson).map(([name, entries]) => {
-      const days = [...new Set(entries.filter(e=>e.actual>0).map(e => e.date.toDateString()))]
-        .map(d => new Date(d)).sort((a,b)=>b-a);
+      const daySet = new Set(entries.filter(e => e.actual > 0).map(e => e.date.toDateString()));
       let streak = 0;
       let cursor = new Date(maxDate);
-      const daySet = new Set(days.map(d=>d.toDateString()));
-      while (daySet.has(cursor.toDateString())) {
+      for (let i = 0; i < MAX_STREAK_CHECK; i++) {
+        if (!daySet.has(cursor.toDateString())) break;
         streak++;
         cursor.setDate(cursor.getDate() - 1);
       }
