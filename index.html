@@ -811,13 +811,21 @@
     const cutoff7 = new Date(maxDate); cutoff7.setDate(cutoff7.getDate() - 7);
     const cutoff14 = new Date(maxDate); cutoff14.setDate(cutoff14.getDate() - 14);
 
-    // Most improved: sum(last 7d) vs sum(prior 7d)
+    // Most improved: compare AVERAGE actual-per-active-day (not raw totals) between
+    // the two windows, so someone simply working more days doesn't look "more improved."
+    // Requires at least 3 active days logged in BOTH windows — otherwise a single
+    // lucky/unlucky day against a near-zero base produces misleading swings like "+900%".
+    const MIN_ACTIVE_DAYS = 3;
     const improved = Object.entries(byPerson).map(([name, entries]) => {
-      const recent = entries.filter(e => e.date > cutoff7).reduce((s,e)=>s+e.actual,0);
-      const prior = entries.filter(e => e.date > cutoff14 && e.date <= cutoff7).reduce((s,e)=>s+e.actual,0);
-      const growth = prior > 0 ? ((recent - prior) / prior) * 100 : (recent > 0 ? 100 : 0);
-      return { name, growth, recent, prior };
-    }).filter(x => x.prior > 0 && x.recent > 0)
+      const recentEntries = entries.filter(e => e.date > cutoff7 && e.actual > 0);
+      const priorEntries = entries.filter(e => e.date > cutoff14 && e.date <= cutoff7 && e.actual > 0);
+      const recentDays = recentEntries.length;
+      const priorDays = priorEntries.length;
+      const recentAvg = recentDays ? recentEntries.reduce((s,e)=>s+e.actual,0) / recentDays : 0;
+      const priorAvg = priorDays ? priorEntries.reduce((s,e)=>s+e.actual,0) / priorDays : 0;
+      const growth = priorAvg > 0 ? ((recentAvg - priorAvg) / priorAvg) * 100 : null;
+      return { name, growth, recentDays, priorDays };
+    }).filter(x => x.growth !== null && x.recentDays >= MIN_ACTIVE_DAYS && x.priorDays >= MIN_ACTIVE_DAYS && x.growth > 0)
       .sort((a,b) => b.growth - a.growth)
       .slice(0, 3);
 
