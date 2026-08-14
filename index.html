@@ -89,7 +89,9 @@
     font-family:'IBM Plex Mono', monospace;
     font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
     color: var(--text-faint); font-weight:600; margin-bottom:20px;
+    display:flex; align-items:center; gap:7px;
   }
+  .podium-eyebrow .icon{ width:14px; height:14px; color: var(--brand); }
   .podium{
     display:grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -375,7 +377,7 @@
   </header>
 
   <div class="podium-card">
-    <div class="podium-eyebrow">Department Champions</div>
+    <div class="podium-eyebrow"><span class="icon" id="ic-trophy"></span>Department Champions</div>
     <div class="podium" id="podium"></div>
   </div>
 
@@ -492,6 +494,7 @@
     block: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5L12 12l8-4.5M12 12v9"/></svg>',
     trending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
     flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.7 7-6.8 0-3-2-5-3.2-7.2C15 6.5 15 4.5 14 2c-1 2-3.5 4-4.5 7-1 3-4 4.6-4 8.2C5.5 19.3 8 22 12 22z"/><path d="M12 18c1.7 0 3-1.2 3-3 0-1.5-1-2.4-1.6-3.6-.4.8-1.4 1.4-2 2.4-.6 1-1.4 1.6-1.4 3.2 0 1.8 1.3 3 2 3z" fill="currentColor" stroke="none" opacity="0.35"/></svg>',
+    trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/><path d="M12 14v3"/><path d="M9 21h6"/><path d="M9.5 17h5l.5 4H9l.5-4z"/></svg>',
   };
   // Map each metric name to an icon key
   const METRIC_ICON = {
@@ -678,17 +681,21 @@
       });
     });
 
-    const metrics = METRIC_NAMES
-      .map((name, i) => ({ name, actual: actualTotals[i], target: targetTotals[i] }))
-      .filter(m => m.target > 0);
-
-    const ranked = metrics
+    const allMetrics = METRIC_NAMES.map((name, i) => ({ name, actual: actualTotals[i], target: targetTotals[i] }));
+    // Metrics with a real target get ranked by % and can appear in the spotlight.
+    // Metrics with no target data yet (target <= 0) can't be ranked by %, but should
+    // still be visible — showing them as "No target set" instead of silently vanishing.
+    const withTarget = allMetrics
+      .filter(m => m.target > 0)
       .map(m => ({ ...m, pct: m.actual / m.target }))
       .sort((a,b) => a.pct - b.pct);
+    const withoutTarget = allMetrics
+      .filter(m => m.target <= 0)
+      .map(m => ({ ...m, pct: null }));
 
-    const spotlightCount = Math.min(3, ranked.length);
-    const spotlightItems = ranked.slice(0, spotlightCount);
-    const listItems = ranked.slice(spotlightCount);
+    const spotlightCount = Math.min(3, withTarget.length);
+    const spotlightItems = withTarget.slice(0, spotlightCount);
+    const listItems = withTarget.slice(spotlightCount).concat(withoutTarget);
     const R = 22, C = 2*Math.PI*R;
 
     const spotlightEl = document.getElementById('spotlight');
@@ -723,16 +730,21 @@
     const listEl = document.getElementById('metric-list');
     listEl.innerHTML = '';
     listItems.forEach(m => {
-      const pctDisplay = Math.round(m.pct*100);
-      const level = m.pct >= 1 ? 'good' : m.pct >= 0.7 ? 'warn' : 'bad';
-      const barWidth = Math.min(m.pct,1) * 100;
+      const hasTarget = m.pct !== null;
+      const pctDisplay = hasTarget ? Math.round(m.pct*100) : null;
+      const level = !hasTarget ? 'warn' : (m.pct >= 1 ? 'good' : m.pct >= 0.7 ? 'warn' : 'bad');
+      const barWidth = hasTarget ? Math.min(m.pct,1) * 100 : 0;
+      const rightLabel = hasTarget ? `${pctDisplay}%` : 'No target';
+      const numsLabel = hasTarget
+        ? `${Math.round(m.actual).toLocaleString()} / ${Math.round(m.target).toLocaleString()}`
+        : `${Math.round(m.actual).toLocaleString()} logged`;
       const row = document.createElement('div');
       row.className = 'ml-row';
       row.innerHTML = `
         <div class="ml-name">${iconFor(m.name)}${m.name}</div>
         <div class="ml-bar-track"><div class="ml-bar-fill ${level}" style="width:${barWidth}%"></div></div>
-        <div class="ml-pct ${level}">${pctDisplay}%</div>
-        <div class="ml-nums">${Math.round(m.actual).toLocaleString()} / ${Math.round(m.target).toLocaleString()}</div>
+        <div class="ml-pct ${level}">${rightLabel}</div>
+        <div class="ml-nums">${numsLabel}</div>
       `;
       listEl.appendChild(row);
     });
@@ -879,6 +891,13 @@
   }
 
   // ============================================================
+  // Static icons that don't depend on fetched data — set immediately,
+  // so they show even before (or if) the sheet fetch completes.
+  // ============================================================
+  document.getElementById('ic-improved').innerHTML = ICONS.trending;
+  document.getElementById('ic-streak').innerHTML = ICONS.flame;
+  document.getElementById('ic-trophy').innerHTML = ICONS.trophy;
+
   loadDashboard().catch(err => {
     console.error(err);
     showError(err.message || 'Could not load the dashboard data');
