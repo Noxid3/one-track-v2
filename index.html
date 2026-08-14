@@ -462,9 +462,20 @@
     el.style.display = 'block';
   }
 
+  // Capitalizes every word (not just the first letter of the whole string) —
+  // so "ahmad faris" -> "Ahmad Faris", not "Ahmad faris".
   function titleCase(s) {
     if (!s) return '';
-    return String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase();
+    return String(s).trim().split(/\s+/)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  // Normalized grouping key: trims whitespace and lowercases, so entries for the
+  // same person/department typed with different casing or stray spaces
+  // ("Zahra", "zahra ", "ZAHRA") merge into one group instead of splitting silently.
+  function normKey(s) {
+    return String(s || '').trim().toLowerCase();
   }
 
   // Small generic line-icon set (stroke=currentColor, 24x24 viewBox), used for metrics + momentum headers.
@@ -614,16 +625,24 @@
   function renderLeaderboard(deptRanking) {
     const byDept = {};
     deptRanking.forEach(r => {
-      const dept = r[1];
-      if (!dept) return;
-      if (!byDept[dept]) byDept[dept] = [];
-      byDept[dept].push({ name: r[0], score: r[2] || 0, photo: r[5] || '' });
+      const rawDept = r[1];
+      const rawName = r[0];
+      if (!rawDept || !rawName) return;
+      const deptKey = normKey(rawDept);
+      const nameKey = normKey(rawName);
+      if (!byDept[deptKey]) byDept[deptKey] = { label: titleCase(rawDept), people: {} };
+      // Merge duplicate rows for the same person (casing/whitespace typos) by summing their scores.
+      if (!byDept[deptKey].people[nameKey]) {
+        byDept[deptKey].people[nameKey] = { name: titleCase(rawName), score: 0, photo: r[5] || '' };
+      }
+      byDept[deptKey].people[nameKey].score += (r[2] || 0);
+      if (!byDept[deptKey].people[nameKey].photo && r[5]) byDept[deptKey].people[nameKey].photo = r[5];
     });
 
     const wrap = document.getElementById('boards-wrap');
     wrap.innerHTML = '';
-    Object.entries(byDept).forEach(([dept, rows]) => {
-      const top5 = rows.sort((a,b) => b.score - a.score).slice(0, 5);
+    Object.values(byDept).forEach(({ label, people }) => {
+      const top5 = Object.values(people).sort((a,b) => b.score - a.score).slice(0, 5);
       const board = document.createElement('div');
       board.className = 'board';
       const rowsHtml = top5.map((r,i) => {
@@ -631,12 +650,12 @@
         return `<div class="row r${i+1}">
           <div class="rk">${i+1}</div>
           ${miniAvatarHTML(r.name, r.photo)}
-          <div class="rname">${titleCase(r.name)}</div>
+          <div class="rname">${r.name}</div>
           <div class="rgap ${i===0?'first':''}">${gap}</div>
           <div class="rscore">${r.score.toLocaleString()}</div>
         </div>`;
       }).join('');
-      board.innerHTML = `<div class="board-head">${titleCase(dept)}</div>${rowsHtml}`;
+      board.innerHTML = `<div class="board-head">${label}</div>${rowsHtml}`;
       wrap.appendChild(board);
     });
   }
@@ -792,8 +811,8 @@
   // NOTE: approximated from available data — see chat notes on definitions used.
   function renderMomentum(dailyInput) {
     const rows = dailyInput
-      .map(r => ({ date: parseGvizDate(r[0]), name: r[1], actual: typeof r[14] === 'number' ? r[14] : 0 }))
-      .filter(r => r.date && r.name);
+      .map(r => ({ date: parseGvizDate(r[0]), rawName: r[1], nameKey: normKey(r[1]), actual: typeof r[14] === 'number' ? r[14] : 0 }))
+      .filter(r => r.date && r.nameKey);
 
     if (!rows.length) {
       document.getElementById('mom-improved').innerHTML = `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No data yet</span></div>`;
@@ -801,10 +820,12 @@
       return;
     }
 
+    // Group by normalized name so the same person typed with different casing/whitespace
+    // across different days ("Zahra" / "zahra " / "ZAHRA") is treated as one person.
     const byPerson = {};
     rows.forEach(r => {
-      if (!byPerson[r.name]) byPerson[r.name] = [];
-      byPerson[r.name].push(r);
+      if (!byPerson[r.nameKey]) byPerson[r.nameKey] = { label: titleCase(r.rawName), entries: [] };
+      byPerson[r.nameKey].entries.push(r);
     });
 
     const maxDate = new Date(Math.max(...rows.map(r => r.date)));
@@ -816,7 +837,7 @@
     // Requires at least 3 active days logged in BOTH windows — otherwise a single
     // lucky/unlucky day against a near-zero base produces misleading swings like "+900%".
     const MIN_ACTIVE_DAYS = 3;
-    const improved = Object.entries(byPerson).map(([name, entries]) => {
+    const improved = Object.values(byPerson).map(({ label, entries }) => {
       const recentEntries = entries.filter(e => e.date > cutoff7 && e.actual > 0);
       const priorEntries = entries.filter(e => e.date > cutoff14 && e.date <= cutoff7 && e.actual > 0);
       const recentDays = recentEntries.length;
@@ -824,7 +845,7 @@
       const recentAvg = recentDays ? recentEntries.reduce((s,e)=>s+e.actual,0) / recentDays : 0;
       const priorAvg = priorDays ? priorEntries.reduce((s,e)=>s+e.actual,0) / priorDays : 0;
       const growth = priorAvg > 0 ? ((recentAvg - priorAvg) / priorAvg) * 100 : null;
-      return { name, growth, recentDays, priorDays };
+      return { name: label, growth, recentDays, priorDays };
     }).filter(x => x.growth !== null && x.recentDays >= MIN_ACTIVE_DAYS && x.priorDays >= MIN_ACTIVE_DAYS && x.growth > 0)
       .sort((a,b) => b.growth - a.growth)
       .slice(0, 3);
@@ -837,7 +858,7 @@
     // Streaks: consecutive most-recent days present with actual > 0.
     // Hard-capped at 90 iterations so a data gap or bad date can never hang the tab.
     const MAX_STREAK_CHECK = 90;
-    const streaks = Object.entries(byPerson).map(([name, entries]) => {
+    const streaks = Object.values(byPerson).map(({ label, entries }) => {
       const daySet = new Set(entries.filter(e => e.actual > 0).map(e => e.date.toDateString()));
       let streak = 0;
       let cursor = new Date(maxDate);
@@ -846,7 +867,7 @@
         streak++;
         cursor.setDate(cursor.getDate() - 1);
       }
-      return { name, streak };
+      return { name: label, streak };
     }).filter(x => x.streak >= 2)
       .sort((a,b) => b.streak - a.streak)
       .slice(0, 3);
