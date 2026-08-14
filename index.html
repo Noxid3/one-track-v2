@@ -464,12 +464,20 @@
     el.style.display = 'block';
   }
 
+  // Department codes that should stay fully uppercase instead of being title-cased.
+  const ACRONYMS = new Set(['NFR']);
+
   // Capitalizes every word (not just the first letter of the whole string) —
-  // so "ahmad faris" -> "Ahmad Faris", not "Ahmad faris".
+  // so "ahmad faris" -> "Ahmad Faris", not "Ahmad faris" — except known acronyms
+  // like "NFR", which stay fully uppercase regardless of how they're typed in the sheet.
   function titleCase(s) {
     if (!s) return '';
     return String(s).trim().split(/\s+/)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .map(w => {
+        const upper = w.toUpperCase();
+        if (ACRONYMS.has(upper)) return upper;
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      })
       .join(' ');
   }
 
