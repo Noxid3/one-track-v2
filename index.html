@@ -109,33 +109,47 @@
   .wreath svg{ width:100%; height:100%; display:block; }
   .wreath ellipse, .wreath path{ fill: currentColor; stroke: currentColor; }
   .wreath path{ fill:none; stroke-width:1.4; opacity:0.85; }
-  .stand.rank1 .wreath{ width:116px; height:116px; color: var(--brand); }
-  .stand.rank2 .wreath{ width:98px; height:98px; color: var(--silver); }
-  .stand.rank3 .wreath{ width:98px; height:98px; color: var(--bronze); }
+  /* All three stands are equal — each is #1 within their own department, so
+     none of them get a "taller" or more prominent treatment than the others. */
+  .stand .wreath{ width:104px; height:104px; color: var(--brand); }
   .avatar{
-    width:64px; height:64px; border-radius:50%;
+    width:70px; height:70px; border-radius:50%;
     background: linear-gradient(145deg,#2A3F52,#1A2C3C);
     display:flex; align-items:center; justify-content:center;
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px;
-    color:var(--text); border:3px solid var(--card);
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px;
+    color:var(--text); border:3px solid var(--brand); box-shadow:0 0 0 3px rgba(251,206,7,0.25);
     position:relative; z-index:2;
     overflow:hidden;
   }
   .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
   .avatar .avatar-fallback{ display:none; align-items:center; justify-content:center; width:100%; height:100%; }
-  .stand.rank1 .avatar{ border-color: var(--brand); box-shadow:0 0 0 3px rgba(251,206,7,0.25); width:76px;height:76px;font-size:24px;}
-  .stand.rank2 .avatar{ border-color: var(--silver); }
-  .stand.rank3 .avatar{ border-color: var(--bronze); }
   .p-name{ font-weight:700; font-size:14.5px; margin-bottom:2px;}
   .p-score{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12.5px; color:var(--good); margin-bottom:14px;}
-  .block{ width:100%; border-radius: 10px 10px 0 0; position:relative; }
-  .block-rank{
-    font-family:'Space Grotesk',sans-serif; font-weight:700; color: rgba(255,255,255,0.35);
-    display:block; padding-top:10px; font-size:14px;
+  .block{
+    width:100%; height:52px; border-radius: 10px 10px 0 0; position:relative;
+    background: linear-gradient(180deg, rgba(251,206,7,0.20), rgba(251,206,7,0.05));
+    border-top:2px solid var(--brand);
   }
-  .rank1 .block{ height:78px; background: linear-gradient(180deg, rgba(251,206,7,0.22), rgba(251,206,7,0.05)); border-top:2px solid var(--brand);}
-  .rank2 .block{ height:54px; background: linear-gradient(180deg, rgba(201,211,220,0.16), rgba(201,211,220,0.04)); border-top:2px solid var(--silver);}
-  .rank3 .block{ height:40px; background: linear-gradient(180deg, rgba(216,154,106,0.18), rgba(216,154,106,0.04)); border-top:2px solid var(--bronze);}
+  .block-rank{
+    font-family:'IBM Plex Mono',sans-serif; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+    color: rgba(251,206,7,0.55); display:block; padding-top:16px; font-size:10.5px;
+  }
+
+  /* Any department champions beyond the top 3 — shown as simple chips, not forced onto the podium */
+  .podium-overflow{
+    flex-wrap:wrap; gap:10px; margin-top:18px; padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+  .champ-chip{
+    display:flex; align-items:center; gap:10px;
+    background: var(--card-hi); border:1px solid var(--line); border-radius:100px;
+    padding:6px 14px 6px 6px;
+  }
+  .champ-chip .avatar-wrap{ margin-bottom:0; }
+  .champ-chip .wreath{ display:none; }
+  .champ-chip .avatar{ width:32px; height:32px; font-size:13px; border-width:2px; }
+  .chip-dept{ font-size:9.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color: var(--text-faint); }
+  .chip-name{ font-size:12.5px; font-weight:600; }
 
   .section-label{
     font-family:'IBM Plex Mono', monospace;
@@ -379,6 +393,7 @@
   <div class="podium-card">
     <div class="podium-eyebrow"><span class="icon" id="ic-trophy"></span>Department Champions</div>
     <div class="podium" id="podium"></div>
+    <div class="podium-overflow" id="podium-overflow" style="display:none"></div>
   </div>
 
   <div class="momentum">
@@ -443,7 +458,8 @@
   ];
 
   // ============================================================
-  // gviz fetch helper — turns a tab name into an array of row-arrays
+  // gviz fetch helper — returns { headers, rows } for a tab, so callers can
+  // look up columns by name instead of trusting a fixed position (see `col()` below).
   // ============================================================
   async function fetchTab(tabName) {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}`;
@@ -453,14 +469,41 @@
     const jsonStr = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
     const parsed = JSON.parse(jsonStr);
     if (parsed.status === 'error') throw new Error(`Sheet error on "${tabName}": ${parsed.errors?.[0]?.detailed_message || 'unknown'}`);
-    return parsed.table.rows.map(r =>
+    const headers = parsed.table.cols.map(c => (c.label || '').trim());
+    const rows = parsed.table.rows.map(r =>
       r.c.map(cell => cell ? (cell.v !== undefined ? cell.v : null) : null)
     );
+    return { tabName, headers, rows };
+  }
+
+  // Builds a column-index lookup for one tab's headers, matched by name
+  // (case-insensitive, trimmed) instead of a fixed position. A reordered or
+  // renamed column is caught immediately with a clear error, instead of silently
+  // attributing data to the wrong metric. `fallbackIdx` is only for the couple of
+  // columns in Dept_Ranking_Clean whose header cell is genuinely blank in the sheet —
+  // if you ever add a header there, this will prefer the name automatically.
+  function makeColFinder(tabName, headers) {
+    const cache = {};
+    return function col(label, fallbackIdx) {
+      if (cache[label] !== undefined) return cache[label];
+      let idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
+      if (idx === -1 && fallbackIdx !== undefined) idx = fallbackIdx;
+      if (idx === -1) {
+        throw new Error(`Column "${label}" not found in "${tabName}" — check the header row hasn't been renamed or removed.`);
+      }
+      cache[label] = idx;
+      return idx;
+    };
   }
 
   function showError(msg) {
     const el = document.getElementById('err-banner');
-    el.textContent = `⚠ ${msg} — check the sheet is shared as "Anyone with the link → Viewer".`;
+    // Column/structure errors are already self-explanatory — don't tack on the
+    // "check sharing" hint, which would be misleading for that case.
+    const isColumnError = /^Column "/.test(msg);
+    el.textContent = isColumnError
+      ? `⚠ ${msg}`
+      : `⚠ ${msg} — check the sheet is shared as "Anyone with the link → Viewer".`;
     el.style.display = 'block';
   }
 
@@ -595,8 +638,10 @@
   }
 
   // ---- Header date range, derived from the actual data present ----
-  function renderDateRange(dailyInput) {
-    const dates = dailyInput.map(r => parseGvizDate(r[0])).filter(Boolean);
+  function renderDateRange({ tabName, headers, rows }) {
+    const col = makeColFinder(tabName, headers);
+    const iDate = col('Date');
+    const dates = rows.map(r => parseGvizDate(r[iDate])).filter(Boolean);
     if (!dates.length) return;
     const min = new Date(Math.min(...dates));
     const max = new Date(Math.max(...dates));
@@ -605,49 +650,82 @@
   }
 
   // ---- Podium: Rank 1 per department from Department_Winners_Clean ----
-  // cols: [Department, Rank, Medal, Shortname, Full Name, Total Items, Photo URL, ...]
-  function renderPodium(winners) {
-    const champions = winners
-      .filter(r => r[1] === 1)
-      .map(r => ({ dept: r[0], name: r[3], score: r[5] || 0, photo: r[6] || '' }))
-      .sort((a,b) => b.score - a.score);
+  // Each champion is #1 within their OWN department — their scores aren't comparable
+  // to each other across departments (different metrics, team sizes, etc). So this
+  // does NOT rank them against one another: all three stands are equal, ordered by
+  // department name (stable, not score-driven) rather than staged as 1st/2nd/3rd.
+  function renderPodium({ tabName, headers, rows }) {
+    const col = makeColFinder(tabName, headers);
+    const iDept = col('Department');
+    const iRank = col('Rank');
+    const iShort = col('Shortname');
+    const iScore = col('Total Items');
+    const iPhoto = col('Photo URL');
 
-    // Center = highest score, left = 2nd, right = 3rd (Olympic-style)
-    const ordered = champions.length === 3
-      ? [champions[1], champions[0], champions[2]]
-      : champions;
-    const rankClasses = champions.length === 3 ? ['rank2','rank1','rank3'] : champions.map((_,i)=>`rank${i+1}`);
-    const displayRank = champions.length === 3 ? [2,1,3] : champions.map((_,i)=>i+1);
+    const champions = rows
+      .filter(r => r[iRank] === 1)
+      .map(r => ({ dept: r[iDept], name: r[iShort], score: r[iScore] || 0, photo: r[iPhoto] || '' }))
+      .sort((a,b) => String(a.dept).localeCompare(String(b.dept)));
+
+    const top3 = champions.slice(0, 3);
+    const overflow = champions.slice(3);
+    const n = top3.length;
 
     const el = document.getElementById('podium');
-    el.innerHTML = ordered.map((c, i) => `
-      <div class="stand ${rankClasses[i]}">
+    el.style.gridTemplateColumns = `repeat(${Math.max(n,1)}, 1fr)`;
+    el.innerHTML = top3.map(c => `
+      <div class="stand">
         <div class="dept-tag">${titleCase(c.dept)}</div>
         ${avatarHTML(c.name, c.photo)}
         <div class="p-name">${titleCase(c.name)}</div>
         <div class="p-score">${(c.score||0).toLocaleString()} pts</div>
-        <div class="block"><span class="block-rank">${displayRank[i]}</span></div>
+        <div class="block"><span class="block-rank">Champion</span></div>
       </div>
     `).join('');
+
+    const overflowEl = document.getElementById('podium-overflow');
+    if (overflow.length) {
+      overflowEl.style.display = 'flex';
+      overflowEl.innerHTML = overflow.map(c => `
+        <div class="champ-chip">
+          ${avatarHTML(c.name, c.photo, 'chip-avatar')}
+          <div class="chip-body">
+            <div class="chip-dept">${titleCase(c.dept)}</div>
+            <div class="chip-name">${titleCase(c.name)} · ${(c.score||0).toLocaleString()} pts</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      overflowEl.style.display = 'none';
+      overflowEl.innerHTML = '';
+    }
   }
 
   // ---- Leaderboard: one board per department, top 5, gap-to-next-rank ----
-  // Dept_Ranking_Clean cols: [Shortname, Department, Score, Rank, Medal, PhotoURL, FullName]
-  function renderLeaderboard(deptRanking) {
+  // Dept_Ranking_Clean has genuinely blank header cells for the first two columns
+  // in the sheet, so those two use a positional fallback (0, 1) — everything else
+  // is matched by name, so it survives reordering.
+  function renderLeaderboard({ tabName, headers, rows }) {
+    const col = makeColFinder(tabName, headers);
+    const iShort = col('Shortname', 0);
+    const iDept = col('Department', 1);
+    const iScore = col('sum', 2);
+    const iPhoto = col('Photo URL');
+
     const byDept = {};
-    deptRanking.forEach(r => {
-      const rawDept = r[1];
-      const rawName = r[0];
+    rows.forEach(r => {
+      const rawDept = r[iDept];
+      const rawName = r[iShort];
       if (!rawDept || !rawName) return;
       const deptKey = normKey(rawDept);
       const nameKey = normKey(rawName);
       if (!byDept[deptKey]) byDept[deptKey] = { label: titleCase(rawDept), people: {} };
       // Merge duplicate rows for the same person (casing/whitespace typos) by summing their scores.
       if (!byDept[deptKey].people[nameKey]) {
-        byDept[deptKey].people[nameKey] = { name: titleCase(rawName), score: 0, photo: r[5] || '' };
+        byDept[deptKey].people[nameKey] = { name: titleCase(rawName), score: 0, photo: r[iPhoto] || '' };
       }
-      byDept[deptKey].people[nameKey].score += (r[2] || 0);
-      if (!byDept[deptKey].people[nameKey].photo && r[5]) byDept[deptKey].people[nameKey].photo = r[5];
+      byDept[deptKey].people[nameKey].score += (r[iScore] || 0);
+      if (!byDept[deptKey].people[nameKey].photo && r[iPhoto]) byDept[deptKey].people[nameKey].photo = r[iPhoto];
     });
 
     const wrap = document.getElementById('boards-wrap');
@@ -672,19 +750,27 @@
   }
 
   // ---- Performance vs Target: sum actuals (daily input) vs sum targets (target master) ----
-  function renderMetrics(dailyInput, targetMaster) {
+  // Each metric column is looked up by its header name in both tabs, so reordering or
+  // inserting a column in either sheet can't silently attribute numbers to the wrong metric.
+  function renderMetrics({ tabName: dailyTab, headers: dailyHeaders, rows: dailyInput },
+                          { tabName: targetTab, headers: targetHeaders, rows: targetMaster }) {
+    const dailyCol = makeColFinder(dailyTab, dailyHeaders);
+    const targetCol = makeColFinder(targetTab, targetHeaders);
+    const dailyIdx = METRIC_NAMES.map(name => dailyCol(name));
+    const targetIdx = METRIC_NAMES.map(name => targetCol(name));
+
     const actualTotals = METRIC_NAMES.map(() => 0);
     dailyInput.forEach(row => {
-      METRIC_NAMES.forEach((_, i) => {
-        const v = row[3 + i];
+      dailyIdx.forEach((idx, i) => {
+        const v = row[idx];
         if (typeof v === 'number') actualTotals[i] += v;
       });
     });
 
     const targetTotals = METRIC_NAMES.map(() => 0);
     targetMaster.forEach(row => {
-      METRIC_NAMES.forEach((_, i) => {
-        const v = row[1 + i];
+      targetIdx.forEach((idx, i) => {
+        const v = row[idx];
         if (typeof v === 'number') targetTotals[i] += v;
       });
     });
@@ -758,10 +844,13 @@
     });
   }
 
-  // ---- Trends: Achievement_Trend_Clean cols [Date, Achievement fraction] ----
-  function renderTrendAndWeekly(trend) {
+  // ---- Trends: Achievement_Trend_Clean ----
+  function renderTrendAndWeekly({ tabName, headers, rows: trend }) {
+    const col = makeColFinder(tabName, headers);
+    const iDate = col('Date');
+    const iPct = col('Achievement %');
     const rows = trend
-      .map(r => ({ date: parseGvizDate(r[0]), pct: r[1] }))
+      .map(r => ({ date: parseGvizDate(r[iDate]), pct: r[iPct] }))
       .filter(r => r.date && typeof r.pct === 'number');
     const trendDates = rows.map(r => r.date.toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
     const trendVals = rows.map(r => r.pct * 100);
@@ -829,9 +918,13 @@
 
   // ---- Momentum: Most Improved (last 7 days vs prior 7) + Streaks (consecutive active days) ----
   // NOTE: approximated from available data — see chat notes on definitions used.
-  function renderMomentum(dailyInput) {
+  function renderMomentum({ tabName, headers, rows: dailyInput }) {
+    const col = makeColFinder(tabName, headers);
+    const iDate = col('Date');
+    const iName = col('Site Hero');
+    const iActual = col('Actual');
     const rows = dailyInput
-      .map(r => ({ date: parseGvizDate(r[0]), rawName: r[1], nameKey: normKey(r[1]), actual: typeof r[14] === 'number' ? r[14] : 0 }))
+      .map(r => ({ date: parseGvizDate(r[iDate]), rawName: r[iName], nameKey: normKey(r[iName]), actual: typeof r[iActual] === 'number' ? r[iActual] : 0 }))
       .filter(r => r.date && r.nameKey);
 
     if (!rows.length) {
