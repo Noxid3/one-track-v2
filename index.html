@@ -26,8 +26,8 @@
     --silver: #C9D3DC;
     --bronze: #D89A6A;
     --shell-red: #EC1C24;
-    --brand: #FBCE07;
-    --brand-dim: rgba(251,206,7,0.14);
+    --brand: #EC1C24;
+    --brand-dim: rgba(236,28,36,0.14);
     --flame: #F5824E;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -60,11 +60,11 @@
     content:''; position:absolute; left:1px; bottom:-4px; width:34px; height:3px;
     border-radius:2px; background: var(--brand);
   }
-  .brand h1 span{ color: var(--good); }
+  .brand h1 span{ color: var(--shell-red); }
   .brand .sub{ color: var(--text-dim); font-size: 13.5px; font-weight:500; }
   .daterange{
     background: var(--card);
-    border:1px solid rgba(251,206,7,0.18);
+    border:1px solid rgba(236,28,36,0.18);
     padding: 9px 16px;
     border-radius: 100px;
     font-size: 13px;
@@ -117,7 +117,7 @@
     background: linear-gradient(145deg,#2A3F52,#1A2C3C);
     display:flex; align-items:center; justify-content:center;
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px;
-    color:var(--text); border:3px solid var(--brand); box-shadow:0 0 0 3px rgba(251,206,7,0.25);
+    color:var(--text); border:3px solid var(--brand); box-shadow:0 0 0 3px rgba(236,28,36,0.25);
     position:relative; z-index:2;
     overflow:hidden;
   }
@@ -127,12 +127,12 @@
   .p-score{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12.5px; color:var(--good); margin-bottom:14px;}
   .block{
     width:100%; height:52px; border-radius: 10px 10px 0 0; position:relative;
-    background: linear-gradient(180deg, rgba(251,206,7,0.20), rgba(251,206,7,0.05));
+    background: linear-gradient(180deg, rgba(236,28,36,0.20), rgba(236,28,36,0.05));
     border-top:2px solid var(--brand);
   }
   .block-rank{
     font-family:'IBM Plex Mono',sans-serif; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
-    color: rgba(251,206,7,0.55); display:block; padding-top:16px; font-size:10.5px;
+    color: rgba(236,28,36,0.55); display:block; padding-top:16px; font-size:10.5px;
   }
 
   /* Any department champions beyond the top 3 — shown as simple chips, not forced onto the podium */
