@@ -926,7 +926,9 @@
     const col = makeColFinder(tabName, headers);
     const iDate = col('Date');
     const iName = col('Site Hero');
-    const iActual = col('Actual');
+    // Reads the weighted point value (not raw units), so "most improved" and
+    // streaks reflect the same scoring system as the leaderboard/podium/trend now do.
+    const iActual = col('Weighted Points');
     const rows = dailyInput
       .map(r => ({ date: parseGvizDate(r[iDate]), rawName: r[iName], nameKey: normKey(r[iName]), actual: typeof r[iActual] === 'number' ? r[iActual] : 0 }))
       .filter(r => r.date && r.nameKey);
