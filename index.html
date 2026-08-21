@@ -488,7 +488,7 @@
   // if you ever add a header there, this will prefer the name automatically.
   function makeColFinder(tabName, headers) {
     const cache = {};
-    return function col(label, fallbackIdx) {
+    const col = function(label, fallbackIdx) {
       if (cache[label] !== undefined) return cache[label];
       let idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
       if (idx === -1 && fallbackIdx !== undefined) idx = fallbackIdx;
@@ -498,6 +498,17 @@
       cache[label] = idx;
       return idx;
     };
+    // Tries each candidate name in order, returning the first that matches —
+    // useful when a column has been intentionally renamed and either the old
+    // or new label should still work (e.g. "Total Items" -> "Total Points").
+    col.any = function(labels) {
+      for (const label of labels) {
+        const idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
+        if (idx !== -1) return idx;
+      }
+      throw new Error(`None of these columns were found in "${tabName}": ${labels.join(', ')} — check the header row.`);
+    };
+    return col;
   }
 
   function showError(msg) {
@@ -663,7 +674,7 @@
     const iDept = col('Department');
     const iRank = col('Rank');
     const iShort = col('Shortname');
-    const iScore = col('Total Items');
+    const iScore = col.any(['Total Points', 'Total Items']);
     const iPhoto = col('Photo URL');
 
     const champions = rows
