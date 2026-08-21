@@ -48,7 +48,7 @@
     margin-bottom: 26px; flex-wrap:wrap; gap:14px;
   }
   .brand-row{ display:flex; align-items:center; gap:10px; }
-  .brand-logo{ height:30px; width:auto; display:none; }
+  .brand-logo{ height:42px; width:auto; display:none; }
   .brand{ display:flex; align-items:baseline; gap:14px; }
   .brand h1{
     font-family:'Space Grotesk', sans-serif;
@@ -354,6 +354,7 @@
     display:flex; align-items:center; justify-content:center; gap:10px;
     margin-top: 30px; color: var(--text-faint); font-size:11.5px; font-weight:500;
   }
+  .footer-logos{ display:flex; align-items:center; gap:2px; }
   .shell-badge{
     width:22px; height:22px; border-radius:6px; background:var(--shell-red);
     display:flex; align-items:center; justify-content:center;
@@ -385,7 +386,6 @@
       <img src="./assets/shell-rcs-logo.png" class="brand-logo" id="brand-logo" alt="" onerror="this.style.display='none'" onload="this.style.display='block'">
       <div class="brand">
         <h1>One<span>Track</span></h1>
-        <div class="sub">RCS Sg Bakap Resources</div>
       </div>
     </div>
     <div class="daterange" id="daterange">Loading…</div>
@@ -438,14 +438,16 @@
   </div>
 
   <footer>
-    <img src="./assets/shell-logo.png" class="footer-logo" id="footer-logo" alt=""
-      onerror="this.style.display='none'; document.getElementById('shell-badge-fallback').style.display='flex';"
-      onload="this.style.display='block'; document.getElementById('shell-badge-fallback').style.display='none';">
-    <div class="shell-badge" id="shell-badge-fallback" style="display:none">S</div>
-    <img src="./assets/rcs-logo.png" class="footer-logo" id="footer-logo-rcs" alt=""
-      onerror="this.style.display='none'"
-      onload="this.style.display='block'">
-    <span id="footer-updated">Powered by RCS Club · Built with Google Sheets Data</span>
+    <div class="footer-logos">
+      <img src="./assets/shell-logo.png" class="footer-logo" id="footer-logo" alt=""
+        onerror="this.style.display='none'; document.getElementById('shell-badge-fallback').style.display='flex';"
+        onload="this.style.display='block'; document.getElementById('shell-badge-fallback').style.display='none';">
+      <div class="shell-badge" id="shell-badge-fallback" style="display:none">S</div>
+      <img src="./assets/rcs-logo.png" class="footer-logo" id="footer-logo-rcs" alt=""
+        onerror="this.style.display='none'"
+        onload="this.style.display='block'">
+    </div>
+    <span id="footer-updated">Built with Google Sheets Data</span>
   </footer>
 
 </div>
@@ -652,7 +654,7 @@
     renderDateRange(dailyInput);
 
     document.getElementById('footer-updated').textContent =
-      `Powered by RCS Club · Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+      `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
   }
 
   // ---- Header date range, derived from the actual data present ----
