@@ -367,18 +367,23 @@
      The physical TV is mounted rotated 90°, but the browser/OS on that device has
      no reliable native rotation support, so the content is rotated here in software
      instead. This does nothing unless the URL flag is present, so the normal link
-     still displays correctly landscape on a phone, laptop, or any other screen. */
+     still displays correctly landscape on a phone, laptop, or any other screen.
+
+     The full dashboard is taller than one screen's worth of pixels once laid out
+     at portrait width — a fixed-height box would just clip everything past the
+     bottom of the first "page". Instead .wrap keeps its natural full height, and
+     a JS auto-scroll loop (added below) slowly pans through it top-to-bottom and
+     back, pausing at each end, so every section eventually becomes visible. */
   body.tv-rotate{ overflow:hidden; }
   body.tv-rotate .wrap{
     position:absolute;
     top:50%; left:50%;
     width:100vh;
-    height:100vw;
     max-width:100vh;
-    transform: translate(-50%,-50%) rotate(90deg);
+    transform: translate(-50%,-50%) rotate(-90deg);
     transform-origin:center center;
-    overflow-y:auto;
     margin:0;
+    transition: transform 20s linear;
   }
 
   @media (max-width: 760px){
@@ -691,6 +696,43 @@
 
     document.getElementById('footer-updated').textContent =
       `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+
+    startTvAutoScroll();
+  }
+
+  // ---- TV auto-scroll: pauses at top, scrolls slowly to the bottom, pauses,
+  // scrolls back up, repeats. Only runs in ?tv=1 mode, and only if the content
+  // is actually taller than one screen's worth of pixels once rotated. Starts
+  // only once — subsequent data refreshes don't restart or stack the loop.
+  let tvAutoScrollStarted = false;
+  function startTvAutoScroll() {
+    if (!document.body.classList.contains('tv-rotate') || tvAutoScrollStarted) return;
+    tvAutoScrollStarted = true;
+
+    const wrap = document.querySelector('.wrap');
+    const PAUSE_MS = 8000;
+
+    function cycle() {
+      // Budget = the visual width available after rotation, which corresponds
+      // to the real browser viewport's own width (not height) in landscape mode.
+      const budget = window.innerWidth;
+      const contentHeight = wrap.scrollHeight;
+      const maxOffset = Math.max(0, contentHeight - budget);
+
+      if (maxOffset <= 0) return; // whole dashboard already fits one screen — nothing to scroll
+
+      let atBottom = false;
+      const step = () => {
+        const offset = atBottom ? maxOffset : 0;
+        wrap.style.transform = `translate(-50%, calc(-50% - ${offset}px)) rotate(-90deg)`;
+        atBottom = !atBottom;
+        setTimeout(step, 20000 + PAUSE_MS); // 20s to match the CSS transition + pause at each end
+      };
+      step();
+    }
+
+    // Small delay so layout has settled before measuring scrollHeight.
+    setTimeout(cycle, 500);
   }
 
   // ---- Header date range, derived from the actual data present ----
