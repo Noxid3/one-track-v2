@@ -363,6 +363,24 @@
   }
   .footer-logo{ height:20px; width:auto; display:none; }
 
+  /* TV rotation mode — applied only when the page is loaded with ?tv=1 in the URL.
+     The physical TV is mounted rotated 90°, but the browser/OS on that device has
+     no reliable native rotation support, so the content is rotated here in software
+     instead. This does nothing unless the URL flag is present, so the normal link
+     still displays correctly landscape on a phone, laptop, or any other screen. */
+  body.tv-rotate{ overflow:hidden; }
+  body.tv-rotate .wrap{
+    position:absolute;
+    top:50%; left:50%;
+    width:100vh;
+    height:100vw;
+    max-width:100vh;
+    transform: translate(-50%,-50%) rotate(90deg);
+    transform-origin:center center;
+    overflow-y:auto;
+    margin:0;
+  }
+
   @media (max-width: 760px){
     .spotlight-grid{ grid-template-columns: 1fr; }
     .boards{ grid-template-columns: 1fr; }
@@ -459,6 +477,13 @@
   // ============================================================
   const SHEET_ID = '1emJi3yzLscUKdzF48H-fT4RpUn5a-zdR4XnuZLVtynM';
   const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
+
+  // TV rotation mode — add ?tv=1 to the URL used on the physically-rotated station
+  // TV to pre-rotate the content 90° in software. Every other visitor (phone,
+  // laptop, testing) uses the plain URL and sees the normal landscape layout.
+  if (new URLSearchParams(location.search).get('tv') === '1') {
+    document.body.classList.add('tv-rotate');
+  }
 
   // Metric columns, in the exact order they appear in both
   // Clean_Daily_Input (starting col index 3) and Clean_Target_Master (starting col index 1)
