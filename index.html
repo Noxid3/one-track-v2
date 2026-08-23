@@ -398,6 +398,32 @@
     transform-origin: top center;
   }
 
+  /* TV compact mode — tightens spacing throughout so the dashboard's natural
+     (unscaled) height gets much closer to matching one screen's worth of space.
+     This matters because scaling alone can't both fill the width AND fit the
+     height without distortion unless the content's natural shape is already
+     close to the screen's shape — this is the actual fix for that, not the
+     scale transform. Only active in ?tv=1 mode; the normal landscape view is
+     untouched. */
+  body.tv-rotate .podium-card{ padding: 16px 20px 0; margin-bottom: 12px; }
+  body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; }
+  body.tv-rotate .section-label{ margin: 14px 0 8px 2px; }
+  body.tv-rotate .momentum{ gap: 8px; }
+  body.tv-rotate .mom-card{ padding: 10px 12px; }
+  body.tv-rotate .mom-head{ margin-bottom: 6px; }
+  body.tv-rotate .mom-row{ padding: 5px 0; }
+  body.tv-rotate .trends{ gap: 8px; }
+  body.tv-rotate .trend-card{ padding: 10px 12px 8px; }
+  body.tv-rotate .trend-head{ margin-bottom: 6px; }
+  body.tv-rotate .bar-chart{ height: 90px; padding-top: 6px; }
+  body.tv-rotate .spotlight-grid{ gap: 8px; margin-bottom: 8px; }
+  body.tv-rotate .spotlight{ padding: 12px 14px; gap: 12px; }
+  body.tv-rotate .m-ring{ width: 46px; height: 46px; }
+  body.tv-rotate .ml-row{ padding: 6px 14px; }
+  body.tv-rotate .boards{ gap: 8px; }
+  body.tv-rotate .board-head{ padding: 8px 12px 7px; }
+  body.tv-rotate .row{ padding: 5px 12px; }
+
   @media (max-width: 760px){
     .spotlight-grid{ grid-template-columns: 1fr; }
     .boards{ grid-template-columns: 1fr; }
@@ -745,7 +771,7 @@
       const contentH = wrap.scrollHeight; // .wrap's real full height at portrait width
 
       const scale = Math.min(1, budget / contentH);
-      wrap.style.transform = `translateX(-50%) scaleY(${scale})`;
+      wrap.style.transform = `translateX(-50%) scale(${scale})`;
     }, 500); // small delay so layout has settled before measuring scrollHeight
   }
 
