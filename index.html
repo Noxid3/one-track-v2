@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OneTrack — Redesign</title>
+<meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -551,6 +552,16 @@
     return String(s || '').trim().toLowerCase();
   }
 
+  // Escapes text pulled from the Google Sheet before it's inserted into the page.
+  // Sheet-sourced values (names, departments) go through this before being placed
+  // in any innerHTML template — without it, a malicious cell value (e.g. containing
+  // a <script> tag) would execute in the browser of anyone viewing the dashboard.
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
   // Small generic line-icon set (stroke=currentColor, 24x24 viewBox), used for metrics + momentum headers.
   const ICONS = {
     bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
@@ -600,9 +611,9 @@
   // Circular avatar with a real photo (from the sheet's Photo URL column) and
   // an initials fallback if the URL is blank or fails to load.
   function avatarHTML(name, photoUrl, extraClass) {
-    const initial = (name || '?').charAt(0).toUpperCase();
+    const initial = escapeHtml((name || '?').charAt(0).toUpperCase());
     const img = photoUrl
-      ? `<img src="${photoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      ? `<img src="${escapeHtml(photoUrl)}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
       : '';
     const fallbackDisplay = photoUrl ? '' : 'style="display:flex"';
     return `<div class="avatar-wrap">
@@ -611,9 +622,9 @@
     </div>`;
   }
   function miniAvatarHTML(name, photoUrl) {
-    const initial = (name || '?').charAt(0).toUpperCase();
+    const initial = escapeHtml((name || '?').charAt(0).toUpperCase());
     const img = photoUrl
-      ? `<img src="${photoUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      ? `<img src="${escapeHtml(photoUrl)}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
       : '';
     const fallbackDisplay = photoUrl ? '' : 'style="display:flex"';
     return `<div class="r-avatar">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>`;
@@ -695,9 +706,9 @@
     el.style.gridTemplateColumns = `repeat(${Math.max(n,1)}, 1fr)`;
     el.innerHTML = top3.map(c => `
       <div class="stand">
-        <div class="dept-tag">${titleCase(c.dept)}</div>
+        <div class="dept-tag">${escapeHtml(titleCase(c.dept))}</div>
         ${avatarHTML(c.name, c.photo)}
-        <div class="p-name">${titleCase(c.name)}</div>
+        <div class="p-name">${escapeHtml(titleCase(c.name))}</div>
         <div class="p-score">${(c.score||0).toLocaleString()} pts</div>
         <div class="block"><span class="block-rank">Champion</span></div>
       </div>
@@ -710,8 +721,8 @@
         <div class="champ-chip">
           ${avatarHTML(c.name, c.photo, 'chip-avatar')}
           <div class="chip-body">
-            <div class="chip-dept">${titleCase(c.dept)}</div>
-            <div class="chip-name">${titleCase(c.name)} · ${(c.score||0).toLocaleString()} pts</div>
+            <div class="chip-dept">${escapeHtml(titleCase(c.dept))}</div>
+            <div class="chip-name">${escapeHtml(titleCase(c.name))} · ${(c.score||0).toLocaleString()} pts</div>
           </div>
         </div>
       `).join('');
@@ -759,12 +770,12 @@
         return `<div class="row r${i+1}">
           <div class="rk">${i+1}</div>
           ${miniAvatarHTML(r.name, r.photo)}
-          <div class="rname">${r.name}</div>
+          <div class="rname">${escapeHtml(r.name)}</div>
           <div class="rgap ${i===0?'first':''}">${gap}</div>
           <div class="rscore">${r.score.toLocaleString()}</div>
         </div>`;
       }).join('');
-      board.innerHTML = `<div class="board-head">${label}</div>${rowsHtml}`;
+      board.innerHTML = `<div class="board-head">${escapeHtml(label)}</div>${rowsHtml}`;
       wrap.appendChild(board);
     });
   }
@@ -987,7 +998,7 @@
 
     const improvedEl = document.getElementById('mom-improved');
     improvedEl.innerHTML = improved.length ? improved.map(x => `
-      <div class="mom-row"><span class="mom-name">${titleCase(x.name)}</span><span class="mom-val up">+${Math.round(x.growth)}%</span></div>
+      <div class="mom-row"><span class="mom-name">${escapeHtml(titleCase(x.name))}</span><span class="mom-val up">+${Math.round(x.growth)}%</span></div>
     `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">Not enough history yet</span></div>`;
 
     // Streaks: consecutive most-recent days present with actual > 0.
@@ -1009,7 +1020,7 @@
 
     const streaksEl = document.getElementById('mom-streaks');
     streaksEl.innerHTML = streaks.length ? streaks.map(x => `
-      <div class="mom-row"><span class="mom-name">${titleCase(x.name)}</span><span class="mom-val flame">🔥 ${x.streak}d</span></div>
+      <div class="mom-row"><span class="mom-name">${escapeHtml(titleCase(x.name))}</span><span class="mom-val flame">🔥 ${x.streak}d</span></div>
     `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No active streaks yet</span></div>`;
   }
 
