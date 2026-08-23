@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OneTrack — RCS Sg Bakap</title>
+<title>OneTrack — Redesign</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -719,17 +719,17 @@
     fitTvDisplay();
   }
 
-  // ---- TV fit-to-screen: shrinks the dashboard uniformly so the whole thing fits
-  // one screen with no scrolling at all — computed from the ACTUAL screen
-  // resolution and the dashboard's real rendered height, not a hardcoded guess for
-  // one specific TV. The rotation itself lives entirely on the static #tv-stage
-  // wrapper (set once at page load, never touched again) — this only ever adjusts
-  // .wrap's plain scale in its own normal, pre-rotation local frame.
-  // NOTE: there's no minimum floor on the shrink factor here, since scrolling was
+  // ---- TV fit-to-screen: compresses the dashboard vertically only, so the whole
+  // thing fits one screen with no scrolling — width is left completely untouched
+  // (scaleY, not scale) so the layout keeps using the full available width instead
+  // of shrinking proportionally and leaving empty space on both sides. Computed
+  // from the ACTUAL screen resolution and the dashboard's real rendered height,
+  // not a hardcoded guess for one specific TV.
+  // NOTE: there's no minimum floor on the shrink factor, since scrolling was
   // intentionally removed — if the dashboard grows a lot taller in the future
-  // (more staff, more leaderboard rows), this will keep shrinking to compensate,
-  // and very tall content could eventually get uncomfortably small. Worth
-  // revisiting if that ever becomes a real problem rather than a hypothetical one.
+  // (more staff, more leaderboard rows), this keeps compressing to compensate,
+  // and very tall content could eventually look noticeably squashed vertically.
+  // Worth revisiting if that becomes a real problem rather than a hypothetical one.
   // Runs only once — later 5-minute data refreshes don't restart or reapply it.
   let tvFitStarted = false;
   function fitTvDisplay() {
@@ -745,7 +745,7 @@
       const contentH = wrap.scrollHeight; // .wrap's real full height at portrait width
 
       const scale = Math.min(1, budget / contentH);
-      wrap.style.transform = `translateX(-50%) scale(${scale})`;
+      wrap.style.transform = `translateX(-50%) scaleY(${scale})`;
     }, 500); // small delay so layout has settled before measuring scrollHeight
   }
 
