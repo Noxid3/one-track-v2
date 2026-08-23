@@ -391,7 +391,9 @@
     position:absolute;
     top:0; left:50%;
     width:100vh;
-    max-width:100vh;
+    max-width:none; /* the base .wrap has a 1160px desktop cap — drop it here so the
+                       layout actually uses the full available portrait width instead
+                       of sitting narrow and centered with unused space on both sides */
     margin:0;
     transform-origin: top center;
   }
@@ -717,27 +719,24 @@
     fitTvDisplay();
   }
 
-  // ---- TV fit-to-screen: shrinks the dashboard uniformly so it fits one screen
-  // (computed from the ACTUAL screen resolution and the dashboard's real rendered
-  // height — not a hardcoded guess for one specific TV), then auto-scrolls through
-  // whatever's still left over. The rotation itself lives entirely on the static
-  // #tv-stage wrapper (set once at page load, never touched again) — everything
-  // here only ever adjusts .wrap's plain scale/position in its own normal,
-  // pre-rotation local frame, so this logic never has to reason about rotation.
-  // Never shrinks below MIN_SCALE (0.75) since text would become unreadable from
-  // across a room past that point — if content is still too tall even at that
-  // floor, the remainder is handled by the slow auto-scroll loop instead, so
-  // nothing is ever silently cut off, just shown a little later in the cycle.
-  // Runs only once — later 5-minute data refreshes don't restart or stack it.
+  // ---- TV fit-to-screen: shrinks the dashboard uniformly so the whole thing fits
+  // one screen with no scrolling at all — computed from the ACTUAL screen
+  // resolution and the dashboard's real rendered height, not a hardcoded guess for
+  // one specific TV. The rotation itself lives entirely on the static #tv-stage
+  // wrapper (set once at page load, never touched again) — this only ever adjusts
+  // .wrap's plain scale in its own normal, pre-rotation local frame.
+  // NOTE: there's no minimum floor on the shrink factor here, since scrolling was
+  // intentionally removed — if the dashboard grows a lot taller in the future
+  // (more staff, more leaderboard rows), this will keep shrinking to compensate,
+  // and very tall content could eventually get uncomfortably small. Worth
+  // revisiting if that ever becomes a real problem rather than a hypothetical one.
+  // Runs only once — later 5-minute data refreshes don't restart or reapply it.
   let tvFitStarted = false;
   function fitTvDisplay() {
     if (!document.body.classList.contains('tv-rotate') || tvFitStarted) return;
     tvFitStarted = true;
 
     const wrap = document.querySelector('.wrap');
-    const MIN_SCALE = 0.75;
-    const PAUSE_MS = 8000;
-    const SCROLL_MS = 20000;
 
     setTimeout(() => {
       // #tv-stage's own (pre-rotation) height is set to 100vw in CSS — that's
@@ -745,35 +744,8 @@
       const budget = window.innerWidth;
       const contentH = wrap.scrollHeight; // .wrap's real full height at portrait width
 
-      const naturalScale = budget / contentH;
-      const scale = Math.min(1, Math.max(naturalScale, MIN_SCALE));
-
-      wrap.style.transition = 'none';
+      const scale = Math.min(1, budget / contentH);
       wrap.style.transform = `translateX(-50%) scale(${scale})`;
-
-      // How much of the scaled content still doesn't fit in one screen's worth
-      // of height — if none, everything already fits and nothing scrolls.
-      const scaledContentH = contentH * scale;
-      const maxOffset = Math.max(0, scaledContentH - budget);
-      if (maxOffset <= 0) return;
-
-      // Re-enable a smooth transition only for the scroll loop itself, not the
-      // instant initial fit above.
-      requestAnimationFrame(() => {
-        wrap.style.transition = `transform ${SCROLL_MS / 1000}s linear`;
-      });
-
-      let atBottom = false;
-      const step = () => {
-        // maxOffset is a post-scale (visual) pixel amount; translateY happens
-        // BEFORE scale in this function's local composition, so it needs to be
-        // expressed in pre-scale units here — divide back down by `scale`.
-        const offsetPx = atBottom ? maxOffset / scale : 0;
-        wrap.style.transform = `translateX(-50%) scale(${scale}) translateY(${-offsetPx}px)`;
-        atBottom = !atBottom;
-        setTimeout(step, SCROLL_MS + PAUSE_MS);
-      };
-      setTimeout(step, PAUSE_MS);
     }, 500); // small delay so layout has settled before measuring scrollHeight
   }
 
