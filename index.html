@@ -369,21 +369,31 @@
      instead. This does nothing unless the URL flag is present, so the normal link
      still displays correctly landscape on a phone, laptop, or any other screen.
 
-     The full dashboard is taller than one screen's worth of pixels once laid out
-     at portrait width — a fixed-height box would just clip everything past the
-     bottom of the first "page". Instead .wrap keeps its natural full height, and
-     a JS auto-scroll loop (added below) slowly pans through it top-to-bottom and
-     back, pausing at each end, so every section eventually becomes visible. */
-  body.tv-rotate{ overflow:hidden; }
-  body.tv-rotate .wrap{
-    position:absolute;
+     Split into two layers on purpose, kept independent so each is simple to reason
+     about correctly:
+     - #tv-stage is a STATIC outer wrapper, sized and rotated ONCE, that never
+       changes afterward — it's just "a screen-sized box, oriented correctly".
+     - .wrap sits inside it and only ever gets a scale (if content is taller than
+       one screen) and a plain vertical shift for the auto-scroll — both computed
+       in .wrap's own normal, pre-rotation local frame, decoupled from the rotation
+       math entirely. */
+  body.tv-rotate{ overflow:hidden; margin:0; }
+  #tv-stage{
+    position:fixed;
     top:50%; left:50%;
+    width:100vh;   /* becomes the visual HEIGHT after rotation */
+    height:100vw;  /* becomes the visual WIDTH after rotation */
+    overflow:hidden;
+    transform-origin:center center;
+    transform: translate(-50%,-50%) rotate(-90deg);
+  }
+  #tv-stage .wrap{
+    position:absolute;
+    top:0; left:50%;
     width:100vh;
     max-width:100vh;
-    transform: translate(-50%,-50%) rotate(-90deg);
-    transform-origin:center center;
     margin:0;
-    transition: transform 20s linear;
+    transform-origin: top center;
   }
 
   @media (max-width: 760px){
@@ -486,8 +496,15 @@
   // TV rotation mode — add ?tv=1 to the URL used on the physically-rotated station
   // TV to pre-rotate the content 90° in software. Every other visitor (phone,
   // laptop, testing) uses the plain URL and sees the normal landscape layout.
+  // Wraps .wrap in a #tv-stage div that handles the rotation, so .wrap itself
+  // stays free to handle scaling/scrolling independently (see fitTvDisplay below).
   if (new URLSearchParams(location.search).get('tv') === '1') {
     document.body.classList.add('tv-rotate');
+    const wrapEl = document.querySelector('.wrap');
+    const stage = document.createElement('div');
+    stage.id = 'tv-stage';
+    wrapEl.parentNode.insertBefore(stage, wrapEl);
+    stage.appendChild(wrapEl);
   }
 
   // Metric columns, in the exact order they appear in both
@@ -697,42 +714,67 @@
     document.getElementById('footer-updated').textContent =
       `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
 
-    startTvAutoScroll();
+    fitTvDisplay();
   }
 
-  // ---- TV auto-scroll: pauses at top, scrolls slowly to the bottom, pauses,
-  // scrolls back up, repeats. Only runs in ?tv=1 mode, and only if the content
-  // is actually taller than one screen's worth of pixels once rotated. Starts
-  // only once — subsequent data refreshes don't restart or stack the loop.
-  let tvAutoScrollStarted = false;
-  function startTvAutoScroll() {
-    if (!document.body.classList.contains('tv-rotate') || tvAutoScrollStarted) return;
-    tvAutoScrollStarted = true;
+  // ---- TV fit-to-screen: shrinks the dashboard uniformly so it fits one screen
+  // (computed from the ACTUAL screen resolution and the dashboard's real rendered
+  // height — not a hardcoded guess for one specific TV), then auto-scrolls through
+  // whatever's still left over. The rotation itself lives entirely on the static
+  // #tv-stage wrapper (set once at page load, never touched again) — everything
+  // here only ever adjusts .wrap's plain scale/position in its own normal,
+  // pre-rotation local frame, so this logic never has to reason about rotation.
+  // Never shrinks below MIN_SCALE (0.75) since text would become unreadable from
+  // across a room past that point — if content is still too tall even at that
+  // floor, the remainder is handled by the slow auto-scroll loop instead, so
+  // nothing is ever silently cut off, just shown a little later in the cycle.
+  // Runs only once — later 5-minute data refreshes don't restart or stack it.
+  let tvFitStarted = false;
+  function fitTvDisplay() {
+    if (!document.body.classList.contains('tv-rotate') || tvFitStarted) return;
+    tvFitStarted = true;
 
     const wrap = document.querySelector('.wrap');
+    const MIN_SCALE = 0.75;
     const PAUSE_MS = 8000;
+    const SCROLL_MS = 20000;
 
-    function cycle() {
-      // Budget = the visual width available after rotation, which corresponds
-      // to the real browser viewport's own width (not height) in landscape mode.
+    setTimeout(() => {
+      // #tv-stage's own (pre-rotation) height is set to 100vw in CSS — that's
+      // the "one screen" budget for .wrap's content, in .wrap's own local frame.
       const budget = window.innerWidth;
-      const contentHeight = wrap.scrollHeight;
-      const maxOffset = Math.max(0, contentHeight - budget);
+      const contentH = wrap.scrollHeight; // .wrap's real full height at portrait width
 
-      if (maxOffset <= 0) return; // whole dashboard already fits one screen — nothing to scroll
+      const naturalScale = budget / contentH;
+      const scale = Math.min(1, Math.max(naturalScale, MIN_SCALE));
+
+      wrap.style.transition = 'none';
+      wrap.style.transform = `translateX(-50%) scale(${scale})`;
+
+      // How much of the scaled content still doesn't fit in one screen's worth
+      // of height — if none, everything already fits and nothing scrolls.
+      const scaledContentH = contentH * scale;
+      const maxOffset = Math.max(0, scaledContentH - budget);
+      if (maxOffset <= 0) return;
+
+      // Re-enable a smooth transition only for the scroll loop itself, not the
+      // instant initial fit above.
+      requestAnimationFrame(() => {
+        wrap.style.transition = `transform ${SCROLL_MS / 1000}s linear`;
+      });
 
       let atBottom = false;
       const step = () => {
-        const offset = atBottom ? maxOffset : 0;
-        wrap.style.transform = `translate(-50%, calc(-50% - ${offset}px)) rotate(-90deg)`;
+        // maxOffset is a post-scale (visual) pixel amount; translateY happens
+        // BEFORE scale in this function's local composition, so it needs to be
+        // expressed in pre-scale units here — divide back down by `scale`.
+        const offsetPx = atBottom ? maxOffset / scale : 0;
+        wrap.style.transform = `translateX(-50%) scale(${scale}) translateY(${-offsetPx}px)`;
         atBottom = !atBottom;
-        setTimeout(step, 20000 + PAUSE_MS); // 20s to match the CSS transition + pause at each end
+        setTimeout(step, SCROLL_MS + PAUSE_MS);
       };
-      step();
-    }
-
-    // Small delay so layout has settled before measuring scrollHeight.
-    setTimeout(cycle, 500);
+      setTimeout(step, PAUSE_MS);
+    }, 500); // small delay so layout has settled before measuring scrollHeight
   }
 
   // ---- Header date range, derived from the actual data present ----
