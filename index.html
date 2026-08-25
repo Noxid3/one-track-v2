@@ -433,6 +433,10 @@
   body.tv-rotate .boards{ gap: 8px; }
   body.tv-rotate .board-head{ padding: 8px 12px 7px; }
   body.tv-rotate .row{ padding: 5px 12px; }
+  /* TV mode leaderboard: just rank, avatar, and current score — no name,
+     no "Leader"/"+X to #Y" gap text, per request for a minimal, glanceable view. */
+  body.tv-rotate .rgap{ display: none; }
+  body.tv-rotate .rname{ display: none; }
 
   @media (max-width: 760px){
     .spotlight-grid{ grid-template-columns: 1fr; }
