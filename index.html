@@ -516,9 +516,11 @@
 
 <script>
   // ============================================================
-  // CONFIG — your Google Sheet
+  // CONFIG — your Apps Script proxy (see the setup guide for how to deploy this)
   // ============================================================
-  const SHEET_ID = '1emJi3yzLscUKdzF48H-fT4RpUn5a-zdR4XnuZLVtynM';
+  // No Sheet ID here anymore — the Apps Script runs bound to the Sheet directly,
+  // and the Sheet itself no longer needs to be publicly link-shared at all.
+  const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyEuxZ_SFPJv3cj7smgLtKn0NnQuAUyYNoBv6LXMP7gJduN4VxsnrLuekNhJnIrDQnb/exec';
   const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
 
   // TV rotation mode — add ?tv=1 to the URL used on the physically-rotated station
@@ -543,22 +545,18 @@
   ];
 
   // ============================================================
-  // gviz fetch helper — returns { headers, rows } for a tab, so callers can
-  // look up columns by name instead of trusting a fixed position (see `col()` below).
+  // Fetch helper — calls the Apps Script proxy instead of Google's public gviz
+  // endpoint, so the Sheet itself never needs to be link-shared. Returns the
+  // same { tabName, headers, rows } shape as before, so every render function
+  // downstream needed zero changes.
   // ============================================================
   async function fetchTab(tabName) {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}`;
+    const url = `${PROXY_URL}?sheet=${encodeURIComponent(tabName)}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Could not load tab "${tabName}" (HTTP ${res.status})`);
-    const text = await res.text();
-    const jsonStr = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
-    const parsed = JSON.parse(jsonStr);
-    if (parsed.status === 'error') throw new Error(`Sheet error on "${tabName}": ${parsed.errors?.[0]?.detailed_message || 'unknown'}`);
-    const headers = parsed.table.cols.map(c => (c.label || '').trim());
-    const rows = parsed.table.rows.map(r =>
-      r.c.map(cell => cell ? (cell.v !== undefined ? cell.v : null) : null)
-    );
-    return { tabName, headers, rows };
+    const parsed = await res.json();
+    if (parsed.error) throw new Error(`Sheet error on "${tabName}": ${parsed.error}`);
+    return { tabName: parsed.tabName, headers: parsed.headers, rows: parsed.rows };
   }
 
   // Builds a column-index lookup for one tab's headers, matched by name
@@ -595,11 +593,11 @@
   function showError(msg) {
     const el = document.getElementById('err-banner');
     // Column/structure errors are already self-explanatory — don't tack on the
-    // "check sharing" hint, which would be misleading for that case.
+    // proxy hint, which would be misleading for that case.
     const isColumnError = /^Column "/.test(msg);
     el.textContent = isColumnError
       ? `⚠ ${msg}`
-      : `⚠ ${msg} — check the sheet is shared as "Anyone with the link → Viewer".`;
+      : `⚠ ${msg} — check the Apps Script proxy is deployed and PROXY_URL is set correctly.`;
     el.style.display = 'block';
   }
 
@@ -705,8 +703,11 @@
     return `<div class="r-avatar">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>`;
   }
 
-  // gviz encodes Date-typed cells as strings like "Date(2026,7,10)" (month is 0-indexed),
-  // not ISO strings — new Date() on that raw string silently returns Invalid Date.
+  // Dates now arrive as plain ISO strings from the Apps Script proxy (it converts
+  // native Date objects via .toISOString() before sending), which `new Date()`
+  // parses correctly on its own — no special handling needed. The gviz-format
+  // regex below is kept only as a harmless fallback in case this ever reverts
+  // to reading gviz's own odd "Date(2026,7,10)" cell format directly.
   function parseGvizDate(v) {
     if (v == null) return null;
     if (v instanceof Date) return v;
