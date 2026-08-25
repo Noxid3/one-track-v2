@@ -387,7 +387,12 @@
     overflow:hidden;
     transform-origin:center center;
     transform: translate(-50%,-50%) rotate(-90deg);
+    /* Hidden until fitTvDisplay finishes sizing everything correctly — avoids
+       any visible snap/slide while data loads and the fit gets computed. */
+    opacity:0;
+    transition: opacity 0.25s ease;
   }
+  #tv-stage.tv-ready{ opacity:1; }
   #tv-stage .wrap{
     position:absolute;
     top:0; left:50%;
@@ -397,6 +402,10 @@
                        of sitting narrow and centered with unused space on both sides */
     margin:0;
     transform-origin: top center;
+    /* Default centering so .wrap is never sitting mispositioned on first paint —
+       fitTvDisplay's JS later overwrites this same property to add the fit
+       scale, but this ensures nothing is ever visibly off-center beforehand. */
+    transform: translateX(-50%);
   }
 
   /* TV compact mode — tightens spacing throughout so the dashboard's natural
@@ -784,6 +793,10 @@
       const scale = Math.min(1, budget / contentH);
       wrap.style.zoom = scale;
       wrap.style.transform = 'translateX(-50%)';
+
+      // Everything is now correctly sized and positioned — reveal it with a
+      // clean fade instead of the earlier snap-into-place.
+      document.getElementById('tv-stage').classList.add('tv-ready');
     }, 500); // small delay so layout has settled before measuring scrollHeight
   }
 
