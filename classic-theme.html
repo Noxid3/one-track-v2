@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OneTrack — Classic</title>
+<title>OneTrack — Classic/title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -207,6 +207,11 @@
     border-radius: 14px;
     padding: 14px 16px;
   }
+  /* Border color matches what's already shown inside each card, rather than
+     an arbitrary new color — green for Most Improved's up-values, amber for
+     Hot Streaks' flame values. */
+  .momentum .mom-card:nth-child(1){ border-top: 3px solid var(--good); }
+  .momentum .mom-card:nth-child(2){ border-top: 3px solid var(--flame); }
   .mom-head{
     display:flex; align-items:center; gap:8px;
     font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;
