@@ -1,6 +1,6 @@
 # OneTrack
 
-A live, gamified performance dashboard built for a real retail site — a Shell station operated by RCS Sg Bakap Resources. Staff performance data lives in a Google Sheet; this dashboard turns it into a leaderboard, trend charts, and department "champions" display, refreshed automatically and rendered for a wall-mounted TV.
+A live, gamified performance dashboard built for a real retail site — a petrol station operated by RCS Sg Bakap Resources. Staff performance data lives in a Google Sheet; this dashboard turns it into a leaderboard, trend charts, and department "champions" display, refreshed automatically and rendered for a wall-mounted TV.
 
 ![Department Champions section](./assets/screenshot-champions.png)
 
