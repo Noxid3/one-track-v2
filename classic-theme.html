@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneTrack — Redesign</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Light theme matching the original Data Studio dashboard's actual look —
+       colors sampled directly from the original (deep maroon-red pills/ribbons,
+       warm gold wreaths/banners, light off-white page background). */
+    --bg: #F2F4F1;
+    --bg-2: #FFFFFF;
+    --card: #FFFFFF;
+    --card-hi: #FCFAF3;
+    --line: rgba(0,0,0,0.08);
+    --text: #24292E;
+    --text-dim: #5B6572;
+    --text-faint: #8B95A1;
+    --good: #3FAE4A;
+    --good-dim: rgba(63,174,74,0.12);
+    --warn: #E8940C;
+    --warn-dim: rgba(232,148,12,0.12);
+    --bad: #A90C1D;
+    --bad-dim: rgba(169,12,29,0.10);
+    --gold: #F7D54D;
+    --gold-dark: #C9A227;
+    --silver: #B8C0C8;
+    --bronze: #B87C4C;
+    --shell-red: #EC1C24;
+    --maroon: #A90C1D;
+    --brand: #F7D54D;
+    --brand-dim: rgba(247,213,77,0.20);
+    --flame: #E8940C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(247,213,77,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(169,12,29,0.04), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    padding: 28px 20px 60px;
+    min-height:100vh;
+  }
+  .wrap{ max-width: 1160px; margin: 0 auto; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 26px; flex-wrap:wrap; gap:14px;
+  }
+  .brand-row{ display:flex; align-items:center; gap:10px; }
+  .brand-logo{ height:42px; width:auto; display:none; }
+  .brand{ display:flex; align-items:baseline; gap:14px; }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 34px; font-weight:700; letter-spacing:-0.02em;
+    color: var(--text);
+    position:relative;
+  }
+  .brand h1::after{
+    content:''; position:absolute; left:1px; bottom:-4px; width:34px; height:3px;
+    border-radius:2px; background: var(--brand);
+  }
+  .brand h1 span{ color: var(--shell-red); }
+  .brand .sub{ color: var(--text-dim); font-size: 13.5px; font-weight:500; }
+  .daterange{
+    background: var(--card);
+    border:1px solid rgba(251,206,7,0.18);
+    padding: 9px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight:600;
+    letter-spacing:0.01em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .daterange::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
+
+  /* PODIUM */
+  .podium-card{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 20px;
+    padding: 26px 30px 0;
+    margin-bottom: 18px;
+    overflow:hidden;
+    position:relative;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  /* Ribbon banner, matching the original's "DEPARTMENT CHAMPION" ribbon —
+     a gold hexagonal banner shape via clip-path, bold maroon text on it. */
+  .podium-eyebrow{
+    position:relative;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--maroon);
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
+    text-align:center;
+    padding:11px 46px;
+    margin: 0 auto 22px;
+    width:fit-content;
+    clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+    box-shadow: 0 3px 8px rgba(201,162,39,0.35);
+  }
+  .podium-eyebrow .icon{ display:none; } /* the ribbon banner replaces the small trophy-icon label style */
+  .podium{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items:end;
+    gap: 16px;
+    padding-top: 8px;
+  }
+  .stand{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+  /* Department pill, matching the original's red CASHIER/FORECOURT/NFR pills */
+  .dept-tag{
+    display:inline-block;
+    background: var(--maroon);
+    color:#FFFFFF;
+    font-size:11px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;
+    padding:7px 20px;
+    border-radius:100px;
+    margin-bottom:16px;
+    box-shadow: 0 2px 6px rgba(169,12,29,0.28);
+  }
+  .avatar-wrap{ position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+  .wreath{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
+  .wreath svg{ width:100%; height:100%; display:block; }
+  .wreath ellipse, .wreath path{ fill: currentColor; stroke: currentColor; }
+  .wreath path{ fill:none; stroke-width:1.4; opacity:0.85; }
+  /* All three stands are equal — each is #1 within their own department, so
+     none of them get a "taller" or more prominent treatment than the others. */
+  .stand .wreath{ width:104px; height:104px; color: var(--gold-dark); }
+  .avatar{
+    width:70px; height:70px; border-radius:50%;
+    background: linear-gradient(145deg,#F2E7C0,#E4D49B);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px;
+    color:var(--maroon); border:3px solid var(--gold); box-shadow:0 0 0 3px rgba(201,162,39,0.25);
+    position:relative; z-index:2;
+    overflow:hidden;
+  }
+  .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .avatar .avatar-fallback{ display:none; align-items:center; justify-content:center; width:100%; height:100%; }
+  /* Ribbon nameplate under each photo — the name sits directly on a small gold
+     ribbon shape, matching the original, instead of plain text. */
+  .p-name{
+    display:inline-block;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--maroon);
+    font-weight:800; font-size:13px; letter-spacing:0.02em; text-transform:uppercase;
+    padding:7px 22px;
+    margin-top:6px; margin-bottom:6px;
+    border-radius:100px;
+    box-shadow: 0 2px 5px rgba(201,162,39,0.3);
+  }
+  .p-score{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; color:var(--text); margin-bottom:16px;}
+
+  /* Any department champions beyond the top 3 — shown as simple chips, not forced onto the podium */
+  .podium-overflow{
+    flex-wrap:wrap; gap:10px; margin-top:18px; padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+  .champ-chip{
+    display:flex; align-items:center; gap:10px;
+    background: var(--card-hi); border:1px solid var(--line); border-radius:100px;
+    padding:6px 14px 6px 6px;
+  }
+  .champ-chip .avatar-wrap{ margin-bottom:0; }
+  .champ-chip .wreath{ display:none; }
+  .champ-chip .avatar{ width:32px; height:32px; font-size:13px; border-width:2px; }
+  .chip-dept{ font-size:9.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color: var(--text-faint); }
+  .chip-name{ font-size:12.5px; font-weight:600; }
+
+  .section-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--text-faint); font-weight:600;
+    margin: 26px 0 12px 2px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-label::before{ content:''; width:10px; height:2px; background: var(--maroon); border-radius:2px; flex-shrink:0; }
+
+  /* Soft shadow on white cards against the light page background — matches the
+     original's card style; wasn't needed on the previous dark theme. */
+  .mom-card, .trend-card, .board, .spotlight{
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* small line-icon wrapper used for metric icons + momentum headers */
+  .icon{ display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .icon svg{ width:100%; height:100%; }
+
+  /* MOMENTUM ROW */
+  .momentum{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .mom-card{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .mom-head{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;
+    margin-bottom: 10px;
+  }
+  .mom-head .ic{ font-size:15px; }
+  .mom-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 7px 0;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .mom-row:first-of-type{ border-top:none; }
+  .mom-name{ font-weight:600; color:var(--text); }
+  .mom-val{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px; }
+  .mom-val.up{ color: var(--good); }
+  .mom-val.flame{ color: var(--flame); display:flex; align-items:center; gap:4px; }
+
+  /* TRENDS SECTION */
+  .trends{
+    display:grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 12px;
+  }
+  .trend-card{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px 12px;
+  }
+  .trend-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  .trend-title{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;
+  }
+  .trend-sub{ font-size:10.5px; color: var(--text-faint); font-weight:500; }
+  .line-fill{ fill: url(#lineGrad); opacity:0.5; }
+  .line-path{ fill:none; stroke: var(--good); stroke-width:2; }
+  .line-dot{ fill: var(--card); stroke: var(--good); stroke-width:2; }
+  .line-dot.peak{ fill: var(--good); }
+  .avg-line{ stroke: var(--text-faint); stroke-width:1; stroke-dasharray:3 3; }
+  .axis-label{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; fill: var(--text-faint); }
+
+  .bar-chart{ display:flex; align-items:flex-end; gap:8px; height:120px; padding-top:10px; }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .bar-fill-el{ width:100%; border-radius: 5px 5px 2px 2px; position:relative; }
+  .bar-fill-el.weekend{ background: linear-gradient(180deg, var(--good), rgba(51,214,166,0.5)); }
+  .bar-fill-el.weekday{ background: linear-gradient(180deg, rgba(147,165,184,0.55), rgba(147,165,184,0.25)); }
+  .bar-val{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color: var(--text-dim); }
+  .bar-day{ font-size:10px; font-weight:600; color: var(--text-faint); }
+  .bar-col.weekend .bar-val{ color: var(--good); }
+  .spotlight-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .spotlight{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display:flex; align-items:center; gap:16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .spotlight::before{
+    content:''; position:absolute; inset:0 0 auto 0; height:3px;
+  }
+  .spotlight.bad::before{ background: var(--bad); }
+  .spotlight.warn::before{ background: var(--warn); }
+  .spot-tag{
+    display:block;
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em;
+    text-transform:uppercase; font-weight:600; color: var(--text-faint);
+    margin-bottom: 3px;
+  }
+  .m-ring{ flex-shrink:0; width:56px; height:56px; position:relative; }
+  .m-ring svg{ transform: rotate(-90deg); }
+  .m-ring .bg{ stroke: rgba(0,0,0,0.08); }
+  .m-ring .fg{ stroke-linecap:round; transition: stroke-dashoffset 0.3s; }
+  .m-ring .pct{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600;
+  }
+  .m-body{ flex:1; min-width:0; }
+  .m-name{ font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px; display:flex; align-items:center; gap:6px;}
+  .m-name .icon{ width:14px; height:14px; color: var(--text-faint); }
+  .m-row{ display:flex; align-items:baseline; gap:6px; }
+  .m-actual{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
+  .m-target{ font-size:11.5px; color: var(--text-faint); font-weight:500;}
+
+  .good .fg{ stroke: var(--good); } .good .pct{ color: var(--good); }
+  .warn .fg{ stroke: var(--warn); } .warn .pct{ color: var(--warn); }
+  .bad  .fg{ stroke: var(--bad);  } .bad  .pct{ color: var(--bad); }
+  .none .fg{ stroke: rgba(0,0,0,0.12); } .none .pct{ color: var(--text-faint); }
+  .spotlight.none::before{ background: var(--text-faint); }
+
+  /* LEADERBOARD — simplified */
+  .boards{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .board{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+  }
+  .board-head{
+    padding: 11px 14px 10px;
+    border-bottom: 2px solid var(--gold);
+    background: linear-gradient(180deg, rgba(247,213,77,0.14), transparent);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:13.5px; color: var(--maroon);
+  }
+  .row{
+    display:flex; align-items:center; gap:9px;
+    padding: 7px 14px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+  }
+  .row:first-of-type{ border-top:none; }
+  .rk{
+    width:16px; text-align:center; font-family:'IBM Plex Mono',monospace;
+    font-weight:600; font-size:11px; color: var(--text-faint); flex-shrink:0;
+  }
+  .row.r1 .rk{ color: var(--gold-dark); }
+  .row.r2 .rk{ color: var(--silver); }
+  .row.r3 .rk{ color: var(--bronze); }
+  .r-avatar{
+    width:34px; height:34px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background: linear-gradient(145deg,#F2E7C0,#E4D49B);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--maroon);
+    border: 1.5px solid var(--gold);
+  }
+  .r-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .r-avatar .avatar-fallback{ display:none; align-items:center; justify-content:center; width:100%; height:100%; }
+  .rname{ flex:1; font-weight:600; color: var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rscore{ font-family:'IBM Plex Mono',monospace; font-weight:600; color: var(--text-dim); font-size:11.5px; text-align:right; flex-shrink:0; }
+  .rgap{ font-family:'IBM Plex Mono',monospace; font-size:10px; color: var(--text-faint); text-align:right; min-width:52px; flex-shrink:0; }
+  .rgap.first{ color: var(--good); }
+
+  footer{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top: 30px; color: var(--text-faint); font-size:11.5px; font-weight:500;
+  }
+  .footer-logos{ display:flex; align-items:center; gap:2px; }
+  .shell-badge{
+    width:22px; height:22px; border-radius:6px; background:var(--shell-red);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10px; color:white;
+  }
+  .footer-logo{ height:20px; width:auto; display:none; }
+
+  /* TV rotation mode — applied only when the page is loaded with ?tv=1 in the URL.
+     The physical TV is mounted rotated 90°, but the browser/OS on that device has
+     no reliable native rotation support, so the content is rotated here in software
+     instead. This does nothing unless the URL flag is present, so the normal link
+     still displays correctly landscape on a phone, laptop, or any other screen.
+
+     Split into two layers on purpose, kept independent so each is simple to reason
+     about correctly:
+     - #tv-stage is a STATIC outer wrapper, sized and rotated ONCE, that never
+       changes afterward — it's just "a screen-sized box, oriented correctly".
+     - .wrap sits inside it and only ever gets a single uniform scale applied
+       (see fitTvDisplay), computed in .wrap's own normal, pre-rotation local
+       frame, decoupled from the rotation math entirely. There is no scrolling —
+       that was tried and deliberately removed; everything must fit statically. */
+  body.tv-rotate{ overflow:hidden; margin:0; }
+  #tv-stage{
+    position:fixed;
+    top:50%; left:50%;
+    width:100vh;   /* becomes the visual HEIGHT after rotation */
+    height:100vw;  /* becomes the visual WIDTH after rotation */
+    overflow:hidden;
+    transform-origin:center center;
+    transform: translate(-50%,-50%) rotate(-90deg);
+    /* Hidden until fitTvDisplay finishes sizing everything correctly — avoids
+       any visible snap/slide while data loads and the fit gets computed. */
+    opacity:0;
+    transition: opacity 0.25s ease;
+  }
+  #tv-stage.tv-ready{ opacity:1; }
+  #tv-stage .wrap{
+    position:absolute;
+    top:0; left:50%;
+    width:100vh;
+    max-width:none; /* the base .wrap has a 1160px desktop cap — drop it here so the
+                       layout actually uses the full available portrait width instead
+                       of sitting narrow and centered with unused space on both sides */
+    margin:0;
+    transform-origin: top center;
+    /* Default centering so .wrap is never sitting mispositioned on first paint —
+       fitTvDisplay's JS later overwrites this same property to add the fit
+       scale, but this ensures nothing is ever visibly off-center beforehand. */
+    transform: translateX(-50%);
+  }
+
+  /* TV compact mode — tightens spacing throughout so the dashboard's natural
+     (unscaled) height gets much closer to matching one screen's worth of space.
+     This matters because scaling alone can't both fill the width AND fit the
+     height without distortion unless the content's natural shape is already
+     close to the screen's shape — this is the actual fix for that, not the
+     scale transform. Only active in ?tv=1 mode; the normal landscape view is
+     untouched. */
+  body.tv-rotate .podium-card{ padding: 16px 20px 0; margin-bottom: 12px; }
+  body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; }
+  body.tv-rotate .section-label{ margin: 14px 0 8px 2px; }
+  body.tv-rotate .momentum{ gap: 8px; }
+  body.tv-rotate .mom-card{ padding: 10px 12px; }
+  body.tv-rotate .mom-head{ margin-bottom: 6px; }
+  body.tv-rotate .mom-row{ padding: 5px 0; }
+  body.tv-rotate .trends{ gap: 8px; }
+  body.tv-rotate .trend-card{ padding: 10px 12px 8px; }
+  body.tv-rotate .trend-head{ margin-bottom: 6px; }
+  body.tv-rotate .bar-chart{ height: 90px; padding-top: 6px; }
+  body.tv-rotate .spotlight-grid{ grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
+  body.tv-rotate .spotlight{ padding: 12px 14px; gap: 12px; align-items: flex-start; }
+  body.tv-rotate .m-ring{ margin-top: 2px; } /* small nudge to visually line up with the tag+name's top edge */
+  body.tv-rotate .boards{ gap: 8px; }
+  body.tv-rotate .board-head{ padding: 8px 12px 7px; }
+  body.tv-rotate .row{ padding: 5px 12px; }
+  /* TV mode leaderboard: just rank, avatar, and current score — no name,
+     no "Leader"/"+X to #Y" gap text, per request for a minimal, glanceable view. */
+  body.tv-rotate .rgap{ display: none; }
+  body.tv-rotate .rname{ display: none; }
+
+  @media (max-width: 760px){
+    .spotlight-grid{ grid-template-columns: 1fr; }
+    .boards{ grid-template-columns: 1fr; }
+    .momentum{ grid-template-columns: 1fr; }
+    .trends{ grid-template-columns: 1fr; }
+    .brand h1{ font-size:26px; }
+  }  .err-banner{
+    background: var(--bad-dim); border:1px solid var(--bad); color: var(--bad);
+    border-radius: 10px; padding: 10px 16px; font-size:12.5px; font-weight:600;
+    margin-bottom: 16px; display:none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="err-banner" id="err-banner"></div>
+
+  <header>
+    <div class="brand-row">
+      <img src="./assets/shell-rcs-logo.png" class="brand-logo" id="brand-logo" alt="" onerror="this.style.display='none'" onload="this.style.display='block'">
+      <div class="brand">
+        <h1>One<span>Track</span></h1>
+      </div>
+    </div>
+    <div class="daterange" id="daterange">Loading…</div>
+  </header>
+
+  <div class="podium-card">
+    <div class="podium-eyebrow"><span class="icon" id="ic-trophy"></span>Department Champions</div>
+    <div class="podium" id="podium"></div>
+    <div class="podium-overflow" id="podium-overflow" style="display:none"></div>
+  </div>
+
+  <div class="momentum">
+    <div class="mom-card">
+      <div class="mom-head"><span class="icon" id="ic-improved" style="width:16px;height:16px;color:var(--good)"></span> Most Improved — this week</div>
+      <div id="mom-improved"></div>
+    </div>
+    <div class="mom-card">
+      <div class="mom-head"><span class="icon" id="ic-streak" style="width:16px;height:16px;color:var(--flame)"></span> Hot Streaks</div>
+      <div id="mom-streaks"></div>
+    </div>
+  </div>
+
+  <div class="section-label">Trends</div>
+  <div class="trends">
+    <div class="trend-card">
+      <div class="trend-head">
+        <span class="trend-title">Achievement Trend</span>
+        <span class="trend-sub" id="trend-range">1 Jul \u2013 10 Aug</span>
+      </div>
+      <svg id="trend-svg" width="100%" height="130" viewBox="0 0 640 130" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="trend-card">
+      <div class="trend-head">
+        <span class="trend-title">Weekly Rhythm</span>
+        <span class="trend-sub">avg by day</span>
+      </div>
+      <div class="bar-chart" id="weekly-bars"></div>
+    </div>
+  </div>
+
+  <div class="section-label">KPI Progress</div>
+  <div class="spotlight-grid" id="spotlight"></div>
+
+  <div class="section-label">Leaderboard</div>
+  <div class="boards" id="boards-wrap">
+    <!-- board columns injected dynamically, one per department -->
+  </div>
+
+  <footer>
+    <div class="footer-logos">
+      <img src="./assets/shell-logo.png" class="footer-logo" id="footer-logo" alt=""
+        onerror="this.style.display='none'; document.getElementById('shell-badge-fallback').style.display='flex';"
+        onload="this.style.display='block'; document.getElementById('shell-badge-fallback').style.display='none';">
+      <div class="shell-badge" id="shell-badge-fallback" style="display:none">S</div>
+      <img src="./assets/rcs-logo.png" class="footer-logo" id="footer-logo-rcs" alt=""
+        onerror="this.style.display='none'"
+        onload="this.style.display='block'">
+    </div>
+    <span id="footer-updated">Built with Google Sheets Data</span>
+  </footer>
+
+</div>
+
+<script>
+  // ============================================================
+  // CONFIG — your Apps Script proxy (see the setup guide for how to deploy this)
+  // ============================================================
+  // No Sheet ID here anymore — the Apps Script runs bound to the Sheet directly,
+  // and the Sheet itself no longer needs to be publicly link-shared at all.
+  const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyEuxZ_SFPJv3cj7smgLtKn0NnQuAUyYNoBv6LXMP7gJduN4VxsnrLuekNhJnIrDQnb/exec';
+  const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
+
+  // TV rotation mode — add ?tv=1 to the URL used on the physically-rotated station
+  // TV to pre-rotate the content 90° in software. Every other visitor (phone,
+  // laptop, testing) uses the plain URL and sees the normal landscape layout.
+  // Wraps .wrap in a #tv-stage div that handles the rotation, so .wrap itself
+  // stays free to handle scaling/scrolling independently (see fitTvDisplay below).
+  if (new URLSearchParams(location.search).get('tv') === '1') {
+    document.body.classList.add('tv-rotate');
+    const wrapEl = document.querySelector('.wrap');
+    const stage = document.createElement('div');
+    stage.id = 'tv-stage';
+    wrapEl.parentNode.insertBefore(stage, wrapEl);
+    stage.appendChild(wrapEl);
+  }
+
+  // Metric columns, in the exact order they appear in both
+  // Clean_Daily_Input (starting col index 3) and Clean_Target_Master (starting col index 1)
+  const METRIC_NAMES = [
+    'Combo Bag','Promo Item','Shell Cafe Promo','Shell Cafe CPD','Shell Cafe Combo',
+    'Refresh CPD','Refresh Meal','Five Star Promo','Daily Fresh Sales','Customer Service','Toys'
+  ];
+
+  // ============================================================
+  // Fetch helper — calls the Apps Script proxy instead of Google's public gviz
+  // endpoint, so the Sheet itself never needs to be link-shared. Returns the
+  // same { tabName, headers, rows } shape as before, so every render function
+  // downstream needed zero changes.
+  // ============================================================
+  async function fetchTab(tabName) {
+    const url = `${PROXY_URL}?sheet=${encodeURIComponent(tabName)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not load tab "${tabName}" (HTTP ${res.status})`);
+    const parsed = await res.json();
+    if (parsed.error) throw new Error(`Sheet error on "${tabName}": ${parsed.error}`);
+    return { tabName: parsed.tabName, headers: parsed.headers, rows: parsed.rows };
+  }
+
+  // Builds a column-index lookup for one tab's headers, matched by name
+  // (case-insensitive, trimmed) instead of a fixed position. A reordered or
+  // renamed column is caught immediately with a clear error, instead of silently
+  // attributing data to the wrong metric. `fallbackIdx` is only for the couple of
+  // columns in Dept_Ranking_Clean whose header cell is genuinely blank in the sheet —
+  // if you ever add a header there, this will prefer the name automatically.
+  function makeColFinder(tabName, headers) {
+    const cache = {};
+    const col = function(label, fallbackIdx) {
+      if (cache[label] !== undefined) return cache[label];
+      let idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
+      if (idx === -1 && fallbackIdx !== undefined) idx = fallbackIdx;
+      if (idx === -1) {
+        throw new Error(`Column "${label}" not found in "${tabName}" — check the header row hasn't been renamed or removed.`);
+      }
+      cache[label] = idx;
+      return idx;
+    };
+    // Tries each candidate name in order, returning the first that matches —
+    // useful when a column has been intentionally renamed and either the old
+    // or new label should still work (e.g. "Total Items" -> "Total Points").
+    col.any = function(labels) {
+      for (const label of labels) {
+        const idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
+        if (idx !== -1) return idx;
+      }
+      throw new Error(`None of these columns were found in "${tabName}": ${labels.join(', ')} — check the header row.`);
+    };
+    return col;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('err-banner');
+    // Column/structure errors are already self-explanatory — don't tack on the
+    // proxy hint, which would be misleading for that case.
+    const isColumnError = /^Column "/.test(msg);
+    el.textContent = isColumnError
+      ? `⚠ ${msg}`
+      : `⚠ ${msg} — check the Apps Script proxy is deployed and PROXY_URL is set correctly.`;
+    el.style.display = 'block';
+  }
+
+  // Department codes that should stay fully uppercase instead of being title-cased.
+  const ACRONYMS = new Set(['NFR']);
+
+  // Capitalizes every word (not just the first letter of the whole string) —
+  // so "ahmad faris" -> "Ahmad Faris", not "Ahmad faris" — except known acronyms
+  // like "NFR", which stay fully uppercase regardless of how they're typed in the sheet.
+  function titleCase(s) {
+    if (!s) return '';
+    return String(s).trim().split(/\s+/)
+      .map(w => {
+        const upper = w.toUpperCase();
+        if (ACRONYMS.has(upper)) return upper;
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      })
+      .join(' ');
+  }
+
+  // Normalized grouping key: trims whitespace and lowercases, so entries for the
+  // same person/department typed with different casing or stray spaces
+  // ("Zahra", "zahra ", "ZAHRA") merge into one group instead of splitting silently.
+  function normKey(s) {
+    return String(s || '').trim().toLowerCase();
+  }
+
+  // Escapes text pulled from the Google Sheet before it's inserted into the page.
+  // Sheet-sourced values (names, departments) go through this before being placed
+  // in any innerHTML template — without it, a malicious cell value (e.g. containing
+  // a <script> tag) would execute in the browser of anyone viewing the dashboard.
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // Small generic line-icon set (stroke=currentColor, 24x24 viewBox), used for metrics + momentum headers.
+  const ICONS = {
+    bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+    tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3h7a2 2 0 0 1 2 2v7a2 2 0 0 1-.6 1.4l-8 8a2 2 0 0 1-2.8 0l-6-6a2 2 0 0 1 0-2.8l8-8A2 2 0 0 1 11 3z"/><circle cx="16" cy="8" r="1.3" fill="currentColor" stroke="none"/></svg>',
+    cup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h11v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 5.5c0 1-1 1-1 2M12 5.5c0 1-1 1-1 2"/></svg>',
+    combo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="14" r="5"/><path d="M15 8h4v9a3 3 0 0 1-3 3h-1V8z"/></svg>',
+    droplet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
+    meal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v7a2 2 0 0 0 2 2v9M7 3v9M9 3v7M17 3c-1.5 0-2 2-2 4s.5 4 2 4v9"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6L12 3z"/></svg>',
+    leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C10 4 4 10 4 18c8 0 14-6 14-14z"/><path d="M5 19c4-4 8-8 14-14"/></svg>',
+    headset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19v1a3 3 0 0 1-3 3h-3"/></svg>',
+    block: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5L12 12l8-4.5M12 12v9"/></svg>',
+    trending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+    flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.7 7-6.8 0-3-2-5-3.2-7.2C15 6.5 15 4.5 14 2c-1 2-3.5 4-4.5 7-1 3-4 4.6-4 8.2C5.5 19.3 8 22 12 22z"/><path d="M12 18c1.7 0 3-1.2 3-3 0-1.5-1-2.4-1.6-3.6-.4.8-1.4 1.4-2 2.4-.6 1-1.4 1.6-1.4 3.2 0 1.8 1.3 3 2 3z" fill="currentColor" stroke="none" opacity="0.35"/></svg>',
+    trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/><path d="M12 14v3"/><path d="M9 21h6"/><path d="M9.5 17h5l.5 4H9l.5-4z"/></svg>',
+  };
+  // Map each metric name to an icon key
+  const METRIC_ICON = {
+    'Combo Bag': 'bag', 'Promo Item': 'tag', 'Shell Cafe Promo': 'cup', 'Shell Cafe CPD': 'cup',
+    'Shell Cafe Combo': 'combo', 'Refresh CPD': 'droplet', 'Refresh Meal': 'meal',
+    'Five Star Promo': 'star', 'Daily Fresh Sales': 'leaf', 'Customer Service': 'headset', 'Toys': 'block',
+  };
+  function iconFor(name, cls) {
+    const key = METRIC_ICON[name];
+    return key ? `<span class="icon ${cls||''}">${ICONS[key]}</span>` : '';
+  }
+
+  // Decorative laurel wreath, drawn behind podium avatars. Generic laurel-leaf motif
+  // (not any brand/trademarked artwork) — color set via CSS `color` on the wrapper.
+  const WREATH_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 40.9 83.8 L 27.5 76.8 L 18.3 64.8 L 15.0 50.0 L 18.3 35.2 L 26.6 24.0"/>
+    <path d="M 59.1 83.8 L 72.5 76.8 L 81.7 64.8 L 85.0 50.0 L 81.7 35.2 L 73.4 24.0"/>
+    <ellipse cx="39.6" cy="88.6" rx="6.2" ry="2.4" transform="rotate(195 39.6 88.6)"/>
+    <ellipse cx="24.3" cy="80.6" rx="6.2" ry="2.4" transform="rotate(220 24.3 80.6)"/>
+    <ellipse cx="13.7" cy="66.9" rx="6.2" ry="2.4" transform="rotate(245 13.7 66.9)"/>
+    <ellipse cx="10.0" cy="50.0" rx="6.2" ry="2.4" transform="rotate(270 10.0 50.0)"/>
+    <ellipse cx="13.7" cy="33.1" rx="6.2" ry="2.4" transform="rotate(295 13.7 33.1)"/>
+    <ellipse cx="23.2" cy="20.3" rx="6.2" ry="2.4" transform="rotate(318 23.2 20.3)"/>
+    <ellipse cx="60.4" cy="88.6" rx="6.2" ry="2.4" transform="rotate(165 60.4 88.6)"/>
+    <ellipse cx="75.7" cy="80.6" rx="6.2" ry="2.4" transform="rotate(140 75.7 80.6)"/>
+    <ellipse cx="86.3" cy="66.9" rx="6.2" ry="2.4" transform="rotate(115 86.3 66.9)"/>
+    <ellipse cx="90.0" cy="50.0" rx="6.2" ry="2.4" transform="rotate(90 90.0 50.0)"/>
+    <ellipse cx="86.3" cy="33.1" rx="6.2" ry="2.4" transform="rotate(65 86.3 33.1)"/>
+    <ellipse cx="76.8" cy="20.3" rx="6.2" ry="2.4" transform="rotate(42 76.8 20.3)"/>
+  </svg>`;
+
+  // Circular avatar with a real photo (from the sheet's Photo URL column) and
+  // an initials fallback if the URL is blank or fails to load.
+  function avatarHTML(name, photoUrl, extraClass) {
+    const initial = escapeHtml((name || '?').charAt(0).toUpperCase());
+    const img = photoUrl
+      ? `<img src="${escapeHtml(photoUrl)}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      : '';
+    const fallbackDisplay = photoUrl ? '' : 'style="display:flex"';
+    return `<div class="avatar-wrap">
+      <div class="wreath">${WREATH_SVG}</div>
+      <div class="avatar ${extraClass||''}">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>
+    </div>`;
+  }
+  function miniAvatarHTML(name, photoUrl) {
+    const initial = escapeHtml((name || '?').charAt(0).toUpperCase());
+    const img = photoUrl
+      ? `<img src="${escapeHtml(photoUrl)}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      : '';
+    const fallbackDisplay = photoUrl ? '' : 'style="display:flex"';
+    return `<div class="r-avatar">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>`;
+  }
+
+  // Dates now arrive as plain ISO strings from the Apps Script proxy (it converts
+  // native Date objects via .toISOString() before sending), which `new Date()`
+  // parses correctly on its own — no special handling needed. The gviz-format
+  // regex below is kept only as a harmless fallback in case this ever reverts
+  // to reading gviz's own odd "Date(2026,7,10)" cell format directly.
+  function parseGvizDate(v) {
+    if (v == null) return null;
+    if (v instanceof Date) return v;
+    const m = String(v).match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+    if (m) {
+      return new Date(+m[1], +m[2], +m[3], +m[4]||0, +m[5]||0, +m[6]||0);
+    }
+    const d = new Date(v);
+    return isNaN(d) ? null : d;
+  }
+
+  // ============================================================
+  // MAIN
+  // ============================================================
+  async function loadDashboard() {
+    document.getElementById('err-banner').style.display = 'none';
+
+    const [winners, deptRanking, dailyInput, targetMaster, trend] = await Promise.all([
+      fetchTab('Department_Winners_Clean'),
+      fetchTab('Dept_Ranking_Clean'),
+      fetchTab('Clean_Daily_Input'),
+      fetchTab('Clean_Target_Master'),
+      fetchTab('Achievement_Trend_Clean'),
+    ]);
+
+    renderPodium(winners);
+    renderLeaderboard(deptRanking);
+    renderMetrics(dailyInput, targetMaster);
+    renderTrendAndWeekly(trend);
+    renderMomentum(dailyInput);
+    renderDateRange(dailyInput);
+
+    document.getElementById('footer-updated').textContent =
+      `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+
+    fitTvDisplay();
+  }
+
+  // ---- TV fit-to-screen: shrinks the dashboard uniformly so it fits one screen
+  // with no scrolling, using CSS `zoom` rather than `transform: scale()`. This
+  // distinction matters a lot for sharpness: `transform: scale()` is a purely
+  // visual/compositing trick — it stretches an already-finished rendering, like
+  // resizing a screenshot, and that softens EVERYTHING equally (text, the SVG
+  // trend line, progress bars, staff photos) since the browser treats it as one
+  // flattened image. `zoom` instead makes the browser genuinely RE-RENDER the
+  // page at the new effective size — fonts re-hinted, SVGs redrawn as vectors,
+  // images requested/displayed at the size that's actually needed — so
+  // everything stays as sharp as it would at that size natively, not stretched.
+  // `zoom` isn't in the official CSS spec, but is well-supported in Chromium-
+  // based browsers, which is what Android TV/Google TV run — appropriate here
+  // even though it wouldn't be a safe choice for a general public website.
+  // Computed from the ACTUAL screen resolution and the dashboard's real rendered
+  // height, not a hardcoded guess for one specific TV.
+  // NOTE: there's no minimum floor on the shrink factor, since scrolling was
+  // intentionally removed — if the dashboard grows a lot taller in the future
+  // (more staff, more leaderboard rows), this keeps shrinking to compensate, and
+  // very tall content could eventually look uncomfortably small. Worth revisiting
+  // if that becomes a real problem rather than a hypothetical one.
+  // Runs only once — later 5-minute data refreshes don't restart or reapply it.
+  let tvFitStarted = false;
+  function fitTvDisplay() {
+    if (!document.body.classList.contains('tv-rotate') || tvFitStarted) return;
+    tvFitStarted = true;
+
+    const wrap = document.querySelector('.wrap');
+
+    setTimeout(() => {
+      // #tv-stage's own (pre-rotation) height is set to 100vw in CSS — that's
+      // the "one screen" budget for .wrap's content, in .wrap's own local frame.
+      // Measured BEFORE zoom is applied, so this reflects the true natural size.
+      const budget = window.innerWidth;
+      const contentH = wrap.scrollHeight; // .wrap's real full height at portrait width
+
+      const scale = Math.min(1, budget / contentH);
+      wrap.style.zoom = scale;
+      wrap.style.transform = 'translateX(-50%)';
+
+      // Everything is now correctly sized and positioned — reveal it with a
+      // clean fade instead of the earlier snap-into-place.
+      document.getElementById('tv-stage').classList.add('tv-ready');
+    }, 500); // small delay so layout has settled before measuring scrollHeight
+  }
+
+  // ---- Header date range, derived from the actual data present ----
+  function renderDateRange({ tabName, headers, rows }) {
+    const col = makeColFinder(tabName, headers);
+    const iDate = col('Date');
+    const dates = rows.map(r => parseGvizDate(r[iDate])).filter(Boolean);
+    if (!dates.length) return;
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
+    const fmt = d => d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    document.getElementById('daterange').textContent = `${fmt(min)} — ${fmt(max)}`;
+  }
+
+  // ---- Podium: Rank 1 per department from Department_Winners_Clean ----
+  // Each champion is #1 within their OWN department — their scores aren't comparable
+  // to each other across departments (different metrics, team sizes, etc). So this
+  // does NOT rank them against one another: all three stands are equal, ordered by
+  // department name (stable, not score-driven) rather than staged as 1st/2nd/3rd.
+  function renderPodium({ tabName, headers, rows }) {
+    const col = makeColFinder(tabName, headers);
+    const iDept = col('Department');
+    const iRank = col('Rank');
+    const iShort = col('Shortname');
+    const iScore = col.any(['Total Points', 'Total Items']);
+    const iPhoto = col('Photo URL');
+
+    const champions = rows
+      .filter(r => r[iRank] === 1)
+      .map(r => ({ dept: r[iDept], name: r[iShort], score: r[iScore] || 0, photo: r[iPhoto] || '' }))
+      .sort((a,b) => String(a.dept).localeCompare(String(b.dept)));
+
+    const top3 = champions.slice(0, 3);
+    const overflow = champions.slice(3);
+    const n = top3.length;
+
+    const el = document.getElementById('podium');
+    el.style.gridTemplateColumns = `repeat(${Math.max(n,1)}, 1fr)`;
+    el.innerHTML = top3.map(c => `
+      <div class="stand">
+        <div class="dept-tag">${escapeHtml(titleCase(c.dept))}</div>
+        ${avatarHTML(c.name, c.photo)}
+        <div class="p-name">${escapeHtml(titleCase(c.name))}</div>
+        <div class="p-score">${(c.score||0).toLocaleString()} pts</div>
+      </div>
+    `).join('');
+
+    const overflowEl = document.getElementById('podium-overflow');
+    if (overflow.length) {
+      overflowEl.style.display = 'flex';
+      overflowEl.innerHTML = overflow.map(c => `
+        <div class="champ-chip">
+          ${avatarHTML(c.name, c.photo, 'chip-avatar')}
+          <div class="chip-body">
+            <div class="chip-dept">${escapeHtml(titleCase(c.dept))}</div>
+            <div class="chip-name">${escapeHtml(titleCase(c.name))} · ${(c.score||0).toLocaleString()} pts</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      overflowEl.style.display = 'none';
+      overflowEl.innerHTML = '';
+    }
+  }
+
+  // ---- Leaderboard: one board per department, every employee, gap-to-next-rank ----
+  // Dept_Ranking_Clean has genuinely blank header cells for the first two columns
+  // in the sheet, so those two use a positional fallback (0, 1) — everything else
+  // is matched by name, so it survives reordering.
+  function renderLeaderboard({ tabName, headers, rows }) {
+    const col = makeColFinder(tabName, headers);
+    const iShort = col('Shortname', 0);
+    const iDept = col('Department', 1);
+    const iScore = col('sum', 2);
+    const iPhoto = col('Photo URL');
+
+    const byDept = {};
+    rows.forEach(r => {
+      const rawDept = r[iDept];
+      const rawName = r[iShort];
+      if (!rawDept || !rawName) return;
+      const deptKey = normKey(rawDept);
+      const nameKey = normKey(rawName);
+      if (!byDept[deptKey]) byDept[deptKey] = { label: titleCase(rawDept), people: {} };
+      // Merge duplicate rows for the same person (casing/whitespace typos) by summing their scores.
+      if (!byDept[deptKey].people[nameKey]) {
+        byDept[deptKey].people[nameKey] = { name: titleCase(rawName), score: 0, photo: r[iPhoto] || '' };
+      }
+      byDept[deptKey].people[nameKey].score += (r[iScore] || 0);
+      if (!byDept[deptKey].people[nameKey].photo && r[iPhoto]) byDept[deptKey].people[nameKey].photo = r[iPhoto];
+    });
+
+    const wrap = document.getElementById('boards-wrap');
+    wrap.innerHTML = '';
+    Object.values(byDept).forEach(({ label, people }) => {
+      // Every employee in the department shows here now — no top-5 cap.
+      const ranked = Object.values(people).sort((a,b) => b.score - a.score);
+      const board = document.createElement('div');
+      board.className = 'board';
+      const rowsHtml = ranked.map((r,i) => {
+        const gap = i === 0 ? 'Leader' : `+${(ranked[i-1].score - r.score).toLocaleString()} to #${i}`;
+        return `<div class="row r${i+1}">
+          <div class="rk">${i+1}</div>
+          ${miniAvatarHTML(r.name, r.photo)}
+          <div class="rname">${escapeHtml(r.name)}</div>
+          <div class="rgap ${i===0?'first':''}">${gap}</div>
+          <div class="rscore">${r.score.toLocaleString()}</div>
+        </div>`;
+      }).join('');
+      board.innerHTML = `<div class="board-head">${escapeHtml(label)}</div>${rowsHtml}`;
+      wrap.appendChild(board);
+    });
+  }
+
+  // ---- Performance vs Target: sum actuals (daily input) vs sum targets (target master) ----
+  // Each metric column is looked up by its header name in both tabs, so reordering or
+  // inserting a column in either sheet can't silently attribute numbers to the wrong metric.
+  function renderMetrics({ tabName: dailyTab, headers: dailyHeaders, rows: dailyInput },
+                          { tabName: targetTab, headers: targetHeaders, rows: targetMaster }) {
+    const dailyCol = makeColFinder(dailyTab, dailyHeaders);
+    const targetCol = makeColFinder(targetTab, targetHeaders);
+    const dailyIdx = METRIC_NAMES.map(name => dailyCol(name));
+    const targetIdx = METRIC_NAMES.map(name => targetCol(name));
+
+    const actualTotals = METRIC_NAMES.map(() => 0);
+    dailyInput.forEach(row => {
+      dailyIdx.forEach((idx, i) => {
+        const v = row[idx];
+        if (typeof v === 'number') actualTotals[i] += v;
+      });
+    });
+
+    const targetTotals = METRIC_NAMES.map(() => 0);
+    targetMaster.forEach(row => {
+      targetIdx.forEach((idx, i) => {
+        const v = row[idx];
+        if (typeof v === 'number') targetTotals[i] += v;
+      });
+    });
+
+    const allMetrics = METRIC_NAMES.map((name, i) => ({ name, actual: actualTotals[i], target: targetTotals[i] }));
+    // Every metric now gets the ring treatment (not just the worst 3) — sorted
+    // worst-first so struggling metrics still surface at the top of the grid.
+    // Metrics with no target data yet (target <= 0) can't be ranked by %, but
+    // still show up — as a neutral gray ring with no fill, rather than vanishing.
+    const withTarget = allMetrics
+      .filter(m => m.target > 0)
+      .map(m => ({ ...m, pct: m.actual / m.target }))
+      .sort((a,b) => a.pct - b.pct);
+    const withoutTarget = allMetrics
+      .filter(m => m.target <= 0)
+      .map(m => ({ ...m, pct: null }));
+    const orderedMetrics = withTarget.concat(withoutTarget);
+
+    const R = 22, C = 2*Math.PI*R;
+
+    const spotlightEl = document.getElementById('spotlight');
+    spotlightEl.innerHTML = '';
+    orderedMetrics.forEach(m => {
+      const hasTarget = m.pct !== null;
+      const pctDisplay = hasTarget ? Math.round(m.pct*100) : null;
+      const level = !hasTarget ? 'none' : (m.pct >= 1 ? 'good' : m.pct >= 0.7 ? 'warn' : 'bad');
+      const dash = hasTarget ? Math.min(m.pct,1) * C : 0;
+      const tagText = !hasTarget ? 'No target' : (level === 'bad' ? 'Below target' : level === 'warn' ? 'Watch' : 'On target');
+      const centerLabel = hasTarget ? `${pctDisplay}%` : '—';
+      const div = document.createElement('div');
+      div.className = `spotlight ${level}`;
+      div.innerHTML = `
+        <div class="m-ring">
+          <svg width="56" height="56">
+            <circle class="bg" cx="28" cy="28" r="${R}" stroke-width="5" fill="none"/>
+            <circle class="fg ${level}" cx="28" cy="28" r="${R}" stroke-width="5" fill="none"
+              stroke-dasharray="${C}" stroke-dashoffset="${C - dash}"/>
+          </svg>
+          <div class="pct ${level}">${centerLabel}</div>
+        </div>
+        <div class="m-body">
+          <span class="spot-tag">${tagText}</span>
+          <div class="m-name">${iconFor(m.name)}${m.name}</div>
+          <div class="m-row">
+            <span class="m-actual">${Math.round(m.actual).toLocaleString()}</span>
+            <span class="m-target">${hasTarget ? '/ ' + Math.round(m.target).toLocaleString() : 'logged'}</span>
+          </div>
+        </div>
+      `;
+      spotlightEl.appendChild(div);
+    });
+  }
+
+  // ---- Trends: Achievement_Trend_Clean ----
+  function renderTrendAndWeekly({ tabName, headers, rows: trend }) {
+    const col = makeColFinder(tabName, headers);
+    const iDate = col('Date');
+    const iPct = col('Achievement %');
+    const rows = trend
+      .map(r => ({ date: parseGvizDate(r[iDate]), pct: r[iPct] }))
+      .filter(r => r.date && typeof r.pct === 'number');
+    const trendDates = rows.map(r => r.date.toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
+    const trendVals = rows.map(r => r.pct * 100);
+
+    document.getElementById('trend-range').textContent =
+      rows.length ? `${trendDates[0]} – ${trendDates[trendDates.length-1]}` : '';
+
+    const svg = document.getElementById('trend-svg');
+    const W = 640, H = 130, padL = 4, padR = 4, padT = 10, padB = 18;
+    const capMax = 200;
+    const capped = trendVals.map(v => Math.min(v, capMax));
+    const n = capped.length;
+    if (n < 2) { svg.innerHTML = ''; return; }
+    const x = i => padL + (i/(n-1)) * (W - padL - padR);
+    const y = v => padT + (1 - v/capMax) * (H - padT - padB);
+
+    let pathD = capped.map((v,i)=> `${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+    let fillD = pathD + ` L ${x(n-1).toFixed(1)} ${y(0).toFixed(1)} L ${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3FAE4A" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#3FAE4A" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="${padL}" y1="${y(100).toFixed(1)}" x2="${W-padR}" y2="${y(100).toFixed(1)}" class="avg-line"/>
+      <text x="${W-padR}" y="${y(100)-4}" text-anchor="end" class="axis-label">100% target</text>
+      <path d="${fillD}" class="line-fill"/>
+      <path d="${pathD}" class="line-path"/>
+      ${capped.map((v,i) => i % 4 === 0 || i === n-1 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" class="line-dot"/>` : '').join('')}
+      <text x="${padL}" y="${H-4}" class="axis-label">${trendDates[0]}</text>
+      <text x="${W-padR}" y="${H-4}" text-anchor="end" class="axis-label">${trendDates[n-1]}</text>
+    `;
+
+    // Weekly rhythm — average by day of week across all rows
+    const order = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const sums = order.map(()=>0), counts = order.map(()=>0);
+    rows.forEach(r => {
+      const dow = r.date.getDay();
+      sums[dow] += r.pct*100; counts[dow]++;
+    });
+    const mondayFirst = [1,2,3,4,5,6,0];
+    const weeklyRhythm = mondayFirst.map(dow => ({
+      day: order[dow],
+      val: counts[dow] ? sums[dow]/counts[dow] : 0,
+      weekend: dow === 0 || dow === 6,
+    }));
+
+    const barsEl = document.getElementById('weekly-bars');
+    barsEl.innerHTML = '';
+    const maxV = Math.max(...weeklyRhythm.map(d=>d.val), 1);
+    weeklyRhythm.forEach(d => {
+      const h = (d.val / maxV) * 100;
+      const col = document.createElement('div');
+      col.className = `bar-col ${d.weekend ? 'weekend' : ''}`;
+      col.innerHTML = `
+        <span class="bar-val">${Math.round(d.val)}%</span>
+        <div class="bar-fill-el ${d.weekend ? 'weekend' : 'weekday'}" style="height:${h}%"></div>
+        <span class="bar-day">${d.day}</span>
+      `;
+      barsEl.appendChild(col);
+    });
+  }
+
+  // ---- Momentum: Most Improved (last 7 days vs prior 7) + Streaks (consecutive active days) ----
+  // NOTE: approximated from available data — see chat notes on definitions used.
+  function renderMomentum({ tabName, headers, rows: dailyInput }) {
+    const col = makeColFinder(tabName, headers);
+    const iDate = col('Date');
+    const iName = col('Site Hero');
+    // Reads the weighted point value (not raw units), so "most improved" and
+    // streaks reflect the same scoring system as the leaderboard/podium/trend now do.
+    const iActual = col('Weighted Points');
+    const rows = dailyInput
+      .map(r => ({ date: parseGvizDate(r[iDate]), rawName: r[iName], nameKey: normKey(r[iName]), actual: typeof r[iActual] === 'number' ? r[iActual] : 0 }))
+      .filter(r => r.date && r.nameKey);
+
+    if (!rows.length) {
+      document.getElementById('mom-improved').innerHTML = `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No data yet</span></div>`;
+      document.getElementById('mom-streaks').innerHTML = `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No data yet</span></div>`;
+      return;
+    }
+
+    // Group by normalized name so the same person typed with different casing/whitespace
+    // across different days ("Zahra" / "zahra " / "ZAHRA") is treated as one person.
+    const byPerson = {};
+    rows.forEach(r => {
+      if (!byPerson[r.nameKey]) byPerson[r.nameKey] = { label: titleCase(r.rawName), entries: [] };
+      byPerson[r.nameKey].entries.push(r);
+    });
+
+    const maxDate = new Date(Math.max(...rows.map(r => r.date)));
+    const cutoff7 = new Date(maxDate); cutoff7.setDate(cutoff7.getDate() - 7);
+    const cutoff14 = new Date(maxDate); cutoff14.setDate(cutoff14.getDate() - 14);
+
+    // Most improved: compare AVERAGE actual-per-active-day (not raw totals) between
+    // the two windows, so someone simply working more days doesn't look "more improved."
+    // Requires at least 3 active days logged in BOTH windows — otherwise a single
+    // lucky/unlucky day against a near-zero base produces misleading swings like "+900%".
+    const MIN_ACTIVE_DAYS = 3;
+    const improved = Object.values(byPerson).map(({ label, entries }) => {
+      const recentEntries = entries.filter(e => e.date > cutoff7 && e.actual > 0);
+      const priorEntries = entries.filter(e => e.date > cutoff14 && e.date <= cutoff7 && e.actual > 0);
+      const recentDays = recentEntries.length;
+      const priorDays = priorEntries.length;
+      const recentAvg = recentDays ? recentEntries.reduce((s,e)=>s+e.actual,0) / recentDays : 0;
+      const priorAvg = priorDays ? priorEntries.reduce((s,e)=>s+e.actual,0) / priorDays : 0;
+      const growth = priorAvg > 0 ? ((recentAvg - priorAvg) / priorAvg) * 100 : null;
+      return { name: label, growth, recentDays, priorDays };
+    }).filter(x => x.growth !== null && x.recentDays >= MIN_ACTIVE_DAYS && x.priorDays >= MIN_ACTIVE_DAYS && x.growth > 0)
+      .sort((a,b) => b.growth - a.growth)
+      .slice(0, 3);
+
+    const improvedEl = document.getElementById('mom-improved');
+    improvedEl.innerHTML = improved.length ? improved.map(x => `
+      <div class="mom-row"><span class="mom-name">${escapeHtml(titleCase(x.name))}</span><span class="mom-val up">+${Math.round(x.growth)}%</span></div>
+    `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">Not enough history yet</span></div>`;
+
+    // Streaks: consecutive most-recent days present with actual > 0.
+    // Hard-capped at 90 iterations so a data gap or bad date can never hang the tab.
+    const MAX_STREAK_CHECK = 90;
+    const streaks = Object.values(byPerson).map(({ label, entries }) => {
+      const daySet = new Set(entries.filter(e => e.actual > 0).map(e => e.date.toDateString()));
+      let streak = 0;
+      let cursor = new Date(maxDate);
+      for (let i = 0; i < MAX_STREAK_CHECK; i++) {
+        if (!daySet.has(cursor.toDateString())) break;
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      return { name: label, streak };
+    }).filter(x => x.streak >= 2)
+      .sort((a,b) => b.streak - a.streak)
+      .slice(0, 3);
+
+    const streaksEl = document.getElementById('mom-streaks');
+    streaksEl.innerHTML = streaks.length ? streaks.map(x => `
+      <div class="mom-row"><span class="mom-name">${escapeHtml(titleCase(x.name))}</span><span class="mom-val flame">🔥 ${x.streak}d</span></div>
+    `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No active streaks yet</span></div>`;
+  }
+
+  // ============================================================
+  // Static icons that don't depend on fetched data — set immediately,
+  // so they show even before (or if) the sheet fetch completes.
+  // ============================================================
+  document.getElementById('ic-improved').innerHTML = ICONS.trending;
+  document.getElementById('ic-streak').innerHTML = ICONS.flame;
+  document.getElementById('ic-trophy').innerHTML = ICONS.trophy;
+
+  loadDashboard().catch(err => {
+    console.error(err);
+    showError(err.message || 'Could not load the dashboard data');
+  });
+  setInterval(() => {
+    loadDashboard().catch(err => {
+      console.error(err);
+      showError(err.message || 'Could not refresh dashboard data');
+    });
+  }, REFRESH_MS);
+</script>
+
+</body>
+</html>
