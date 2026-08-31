@@ -310,8 +310,15 @@
   /* LEADERBOARD — simplified */
   .boards{
     display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+    align-items:start;
     gap: 12px;
+  }
+  /* Holds Cashier + Forecourt stacked in the shared column — NFR gets its own
+     full column separately. Each board keeps its own card/border/header, so
+     they read as clearly distinct even while sharing a column. */
+  .board-stack{
+    display:flex; flex-direction:column; gap:12px;
   }
   .board{
     background: var(--card);
@@ -326,6 +333,10 @@
     font-family:'Space Grotesk',sans-serif;
     font-weight:700; font-size:13.5px; color: var(--maroon);
   }
+  /* Small color accent so the two stacked boards (Cashier/Forecourt) are
+     distinguishable at a glance, not just by their text label. */
+  .board-stack .board:nth-child(1){ border-top: 3px solid var(--maroon); }
+  .board-stack .board:nth-child(2){ border-top: 3px solid var(--gold-dark); }
   .row{
     display:flex; align-items:center; gap:9px;
     padding: 7px 14px;
@@ -827,9 +838,22 @@
     const iScore = col.any(['Total Points', 'Total Items']);
     const iPhoto = col('Photo URL');
 
-    const champions = rows
+    const rank1Rows = rows
       .filter(r => r[iRank] === 1)
-      .map(r => ({ dept: r[iDept], name: r[iShort], score: r[iScore] || 0, photo: r[iPhoto] || '' }))
+      .map(r => ({ dept: r[iDept], name: r[iShort], score: r[iScore] || 0, photo: r[iPhoto] || '' }));
+
+    // Group by NORMALIZED department (trim + lowercase) rather than trusting the
+    // sheet to have exactly one rank-1 row per department. If a stale or duplicate
+    // rank-1 tag ever ends up on a second row for the same department, this keeps
+    // only the highest-scoring entry for that department instead of letting the
+    // duplicate occupy a podium slot and silently push a real department's
+    // champion into overflow (or off the podium entirely).
+    const byDept = {};
+    rank1Rows.forEach(c => {
+      const key = normKey(c.dept);
+      if (!byDept[key] || c.score > byDept[key].score) byDept[key] = c;
+    });
+    const champions = Object.values(byDept)
       .sort((a,b) => String(a.dept).localeCompare(String(b.dept)));
 
     const top3 = champions.slice(0, 3);
@@ -892,13 +916,13 @@
       if (!byDept[deptKey].people[nameKey].photo && r[iPhoto]) byDept[deptKey].people[nameKey].photo = r[iPhoto];
     });
 
-    const wrap = document.getElementById('boards-wrap');
-    wrap.innerHTML = '';
-    Object.values(byDept).forEach(({ label, people }) => {
-      // Every employee in the department shows here now — no top-5 cap.
+    // NFR gets its own column (it's the largest department); everything else
+    // (Cashier, Forecourt) shares the other column, stacked as separate cards —
+    // each still has its own header/border so they stay clearly distinguishable,
+    // just grouped together rather than each claiming a full-width column of
+    // their own, which left a lot of empty space next to NFR's longer roster.
+    function buildBoardHTML(label, people) {
       const ranked = Object.values(people).sort((a,b) => b.score - a.score);
-      const board = document.createElement('div');
-      board.className = 'board';
       const rowsHtml = ranked.map((r,i) => {
         const gap = i === 0 ? 'Leader' : `+${(ranked[i-1].score - r.score).toLocaleString()} to #${i}`;
         return `<div class="row r${i+1}">
@@ -909,9 +933,22 @@
           <div class="rscore">${r.score.toLocaleString()}</div>
         </div>`;
       }).join('');
-      board.innerHTML = `<div class="board-head">${escapeHtml(label)}</div>${rowsHtml}`;
-      wrap.appendChild(board);
-    });
+      return `<div class="board"><div class="board-head">${escapeHtml(label)}</div>${rowsHtml}</div>`;
+    }
+
+    const wrap = document.getElementById('boards-wrap');
+    const deptEntries = Object.values(byDept);
+    const nfrEntry = deptEntries.find(d => normKey(d.label) === 'nfr');
+    const otherEntries = deptEntries.filter(d => normKey(d.label) !== 'nfr');
+
+    let html = '';
+    if (otherEntries.length) {
+      html += `<div class="board-stack">${otherEntries.map(d => buildBoardHTML(d.label, d.people)).join('')}</div>`;
+    }
+    if (nfrEntry) {
+      html += buildBoardHTML(nfrEntry.label, nfrEntry.people);
+    }
+    wrap.innerHTML = html;
   }
 
   // ---- Performance vs Target: sum actuals (daily input) vs sum targets (target master) ----
