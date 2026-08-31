@@ -270,8 +270,8 @@
     background: var(--card);
     border:1px solid var(--line);
     border-radius: 14px;
-    padding: 18px 20px;
-    display:flex; align-items:center; gap:16px;
+    padding: 16px 18px;
+    display:flex; align-items:center; gap:12px;
     position:relative;
     overflow:hidden;
   }
@@ -280,23 +280,33 @@
   }
   .spotlight.bad::before{ background: var(--bad); }
   .spotlight.warn::before{ background: var(--warn); }
+  /* The "little picture" badge beside each KPI, matching the spirit of the
+     original Data Studio dashboard's illustrated mascots/product photos —
+     original iconography here, not a copy of any specific stock illustration. */
+  .m-pic{
+    flex-shrink:0; width:46px; height:46px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #FCEFC0, var(--brand-dim));
+    border: 2px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 2px 5px rgba(201,162,39,0.25);
+  }
+  .m-pic .icon{ width:24px; height:24px; color: var(--maroon); }
   .spot-tag{
     display:block;
     font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em;
     text-transform:uppercase; font-weight:600; color: var(--text-faint);
     margin-bottom: 3px;
   }
-  .m-ring{ flex-shrink:0; width:56px; height:56px; position:relative; }
+  .m-ring{ flex-shrink:0; width:48px; height:48px; position:relative; }
   .m-ring svg{ transform: rotate(-90deg); }
   .m-ring .bg{ stroke: rgba(0,0,0,0.08); }
   .m-ring .fg{ stroke-linecap:round; transition: stroke-dashoffset 0.3s; }
   .m-ring .pct{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600;
   }
   .m-body{ flex:1; min-width:0; }
-  .m-name{ font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px; display:flex; align-items:center; gap:6px;}
-  .m-name .icon{ width:14px; height:14px; color: var(--text-faint); }
+  .m-name{ font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px; }
   .m-row{ display:flex; align-items:baseline; gap:6px; }
   .m-actual{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
   .m-target{ font-size:11.5px; color: var(--text-faint); font-weight:500;}
@@ -337,6 +347,9 @@
      distinguishable at a glance, not just by their text label. */
   .board-stack .board:nth-child(1){ border-top: 3px solid var(--maroon); }
   .board-stack .board:nth-child(2){ border-top: 3px solid var(--gold-dark); }
+  /* NFR sits as its own direct child of .boards (not inside .board-stack) —
+     give it a matching accent so it doesn't look plain next to the other two. */
+  .boards > .board{ border-top: 3px solid #7B4B94; }
   .row{
     display:flex; align-items:center; gap:9px;
     padding: 7px 14px;
@@ -840,7 +853,12 @@
 
     const rank1Rows = rows
       .filter(r => r[iRank] === 1)
-      .map(r => ({ dept: r[iDept], name: r[iShort], score: r[iScore] || 0, photo: r[iPhoto] || '' }));
+      .map(r => ({ dept: r[iDept], name: r[iShort], score: r[iScore] || 0, photo: r[iPhoto] || '' }))
+      // A rank-1 row with a blank/missing department is a data error, not a
+      // genuine 4th department — without this, it forms its own bogus group
+      // below (since it doesn't match any real department's normalized key)
+      // and can still bump a real department's champion into overflow.
+      .filter(c => normKey(c.dept) !== '');
 
     // Group by NORMALIZED department (trim + lowercase) rather than trusting the
     // sheet to have exactly one rank-1 row per department. If a stale or duplicate
@@ -1005,8 +1023,9 @@
       const div = document.createElement('div');
       div.className = `spotlight ${level}`;
       div.innerHTML = `
+        <div class="m-pic">${iconFor(m.name)}</div>
         <div class="m-ring">
-          <svg width="56" height="56">
+          <svg width="48" height="48" viewBox="0 0 56 56">
             <circle class="bg" cx="28" cy="28" r="${R}" stroke-width="5" fill="none"/>
             <circle class="fg ${level}" cx="28" cy="28" r="${R}" stroke-width="5" fill="none"
               stroke-dasharray="${C}" stroke-dashoffset="${C - dash}"/>
@@ -1015,7 +1034,7 @@
         </div>
         <div class="m-body">
           <span class="spot-tag">${tagText}</span>
-          <div class="m-name">${iconFor(m.name)}${m.name}</div>
+          <div class="m-name">${m.name}</div>
           <div class="m-row">
             <span class="m-actual">${Math.round(m.actual).toLocaleString()}</span>
             <span class="m-target">${hasTarget ? '/ ' + Math.round(m.target).toLocaleString() : 'logged'}</span>
