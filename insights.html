@@ -534,6 +534,27 @@
 
   .empty-state{ color: var(--text-faint); font-size:13px; padding:20px 0; text-align:center; }
 
+  .archive-grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:14px;
+  }
+  .archive-card{
+    background: var(--bg-2); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px;
+  }
+  .archive-month{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px;
+    color: var(--maroon); margin-bottom:10px;
+  }
+  .archive-row{
+    display:flex; align-items:center; gap:8px; padding:6px 0;
+    border-top:1px solid var(--line); font-size:12.5px;
+  }
+  .archive-row:first-of-type{ border-top:none; }
+  .archive-dept-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .archive-dept-name{ width:80px; flex-shrink:0; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color: var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .archive-champ-name{ flex:1; font-weight:600; color: var(--text); }
+  .archive-champ-score{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:11.5px; color: var(--text-dim); }
+
   @media (max-width: 760px){
     .staff-stats{ margin-left:0; margin-top:12px; }
     .staff-profile{ flex-wrap:wrap; }
@@ -567,6 +588,12 @@
     <div class="insight-sub">Each department shown as % of its own typical daily total — not raw points — so the three lines are genuinely comparable to each other, even though Cashier, Forecourt, and NFR naturally operate at very different scales.</div>
     <div class="dept-legend" id="dept-legend"></div>
     <svg id="dept-trend-svg" width="100%" height="220" viewBox="0 0 900 220" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="insight-card">
+    <div class="insight-head">Monthly Champions Archive</div>
+    <div class="insight-sub">Each completed month's top scorer per department — going back as far as data allows, up to 6 months. The current in-progress month isn't shown here, since it hasn't finished yet.</div>
+    <div class="archive-grid" id="monthly-archive"></div>
   </div>
 
   <footer>
@@ -692,6 +719,7 @@
 
     populateStaffSelect();
     renderDepartmentComparison();
+    renderMonthlyArchive();
 
     document.getElementById('footer-updated').textContent =
       `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
@@ -847,6 +875,59 @@
         <div class="dept-legend-dot" style="background:${DEPT_COLORS[d] || '#888'}"></div>
         ${escapeHtml(titleCase(d))}
       </div>`).join('');
+  }
+
+  // ============================================================
+  // Monthly Champions Archive — each COMPLETED calendar month's top scorer
+  // per department, going back up to 6 months. The in-progress current month
+  // is deliberately excluded (it hasn't finished, so "champion" wouldn't be
+  // final yet), and any month with genuinely zero rows is skipped entirely
+  // rather than shown as a blank/fake card.
+  // ============================================================
+  function renderMonthlyArchive() {
+    const now = new Date();
+    const container = document.getElementById('monthly-archive');
+
+    const cards = [];
+    for (let offset = 1; offset <= 6; offset++) {
+      const targetMonth = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const year = targetMonth.getFullYear(), month = targetMonth.getMonth();
+      const label = targetMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+      const rowsInMonth = DAILY_ROWS.filter(r => r.date.getFullYear() === year && r.date.getMonth() === month);
+      if (!rowsInMonth.length) continue; // no data at all this far back — skip, don't fake a card
+
+      // Sum weighted points per (department, person) for this specific month
+      const byDeptPerson = {};
+      rowsInMonth.forEach(r => {
+        const key = r.deptKey + '|' + r.nameKey;
+        if (!byDeptPerson[key]) byDeptPerson[key] = { dept: r.dept, deptKey: r.deptKey, name: r.name, total: 0 };
+        byDeptPerson[key].total += r.weighted;
+      });
+
+      // Highest scorer per department that month
+      const topByDept = {};
+      Object.values(byDeptPerson).forEach(p => {
+        if (!topByDept[p.deptKey] || p.total > topByDept[p.deptKey].total) topByDept[p.deptKey] = p;
+      });
+
+      const champions = Object.values(topByDept).sort((a,b) => String(a.dept).localeCompare(String(b.dept)));
+      if (!champions.length) continue;
+
+      const rowsHtml = champions.map(c => `
+        <div class="archive-row">
+          <span class="archive-dept-dot" style="background:${DEPT_COLORS[c.deptKey] || '#888'}"></span>
+          <span class="archive-dept-name">${escapeHtml(titleCase(c.dept))}</span>
+          <span class="archive-champ-name">${escapeHtml(titleCase(c.name))}</span>
+          <span class="archive-champ-score">${Math.round(c.total).toLocaleString()} pts</span>
+        </div>`).join('');
+
+      cards.push(`<div class="archive-card"><div class="archive-month">${escapeHtml(label)}</div>${rowsHtml}</div>`);
+    }
+
+    container.innerHTML = cards.length
+      ? cards.join('')
+      : '<div class="empty-state">No completed months of data yet.</div>';
   }
 
   loadInsights().catch(err => {
