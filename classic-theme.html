@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OneTrack — Classic</title>
+<title>OneTrack — Redesign</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -80,6 +80,11 @@
     display:flex; align-items:center; gap:8px;
   }
   .daterange::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
+  .insights-link{
+    font-size:12.5px; font-weight:700; color: var(--maroon);
+    text-decoration:none; padding:9px 14px; border-radius:100px;
+    background: var(--card); border:1px solid var(--gold);
+  }
 
   /* PODIUM */
   .podium-card{
@@ -446,6 +451,7 @@
      close to the screen's shape — this is the actual fix for that, not the
      scale transform. Only active in ?tv=1 mode; the normal landscape view is
      untouched. */
+  body.tv-rotate .insights-link{ display:none; } /* interactive nav link, not relevant on an unattended TV display */
   body.tv-rotate .podium-card{ padding: 16px 20px 0; margin-bottom: 12px; }
   body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; }
   body.tv-rotate .section-label{ margin: 14px 0 8px 2px; }
@@ -493,7 +499,10 @@
         <h1>One<span>Track</span></h1>
       </div>
     </div>
-    <div class="daterange" id="daterange">Loading…</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="./insights.html" class="insights-link">Insights &rarr;</a>
+      <div class="daterange" id="daterange">Loading…</div>
+    </div>
   </header>
 
   <div class="podium-card">
