@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneTrack — Insights</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Light theme matching the original Data Studio dashboard's actual look —
+       colors sampled directly from the original (deep maroon-red pills/ribbons,
+       warm gold wreaths/banners, light off-white page background). */
+    --bg: #F2F4F1;
+    --bg-2: #FFFFFF;
+    --card: #FFFFFF;
+    --card-hi: #FCFAF3;
+    --line: rgba(0,0,0,0.08);
+    --text: #24292E;
+    --text-dim: #5B6572;
+    --text-faint: #8B95A1;
+    --good: #3FAE4A;
+    --good-dim: rgba(63,174,74,0.12);
+    --warn: #E8940C;
+    --warn-dim: rgba(232,148,12,0.12);
+    --bad: #A90C1D;
+    --bad-dim: rgba(169,12,29,0.10);
+    --gold: #F7D54D;
+    --gold-dark: #C9A227;
+    --silver: #B8C0C8;
+    --bronze: #B87C4C;
+    --shell-red: #EC1C24;
+    --maroon: #A90C1D;
+    --brand: #F7D54D;
+    --brand-dim: rgba(247,213,77,0.20);
+    --flame: #E8940C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(247,213,77,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(169,12,29,0.04), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    padding: 28px 20px 60px;
+    min-height:100vh;
+  }
+  .wrap{ max-width: 1160px; margin: 0 auto; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 26px; flex-wrap:wrap; gap:14px;
+  }
+  .brand-row{ display:flex; align-items:center; gap:10px; }
+  .brand-logo{ height:42px; width:auto; display:none; }
+  .brand{ display:flex; align-items:baseline; gap:14px; }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 34px; font-weight:700; letter-spacing:-0.02em;
+    color: var(--text);
+    position:relative;
+  }
+  .brand h1::after{
+    content:''; position:absolute; left:1px; bottom:-4px; width:34px; height:3px;
+    border-radius:2px; background: var(--brand);
+  }
+  .brand h1 span{ color: var(--shell-red); }
+  .brand .sub{ color: var(--text-dim); font-size: 13.5px; font-weight:500; }
+  .daterange{
+    background: var(--card);
+    border:1px solid rgba(251,206,7,0.18);
+    padding: 9px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight:600;
+    letter-spacing:0.01em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .daterange::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
+
+  /* PODIUM */
+  .podium-card{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 20px;
+    padding: 26px 30px 0;
+    margin-bottom: 18px;
+    overflow:hidden;
+    position:relative;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  /* Ribbon banner, matching the original's "DEPARTMENT CHAMPION" ribbon —
+     a gold hexagonal banner shape via clip-path, bold maroon text on it. */
+  .podium-eyebrow{
+    position:relative;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--maroon);
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
+    text-align:center;
+    padding:11px 46px;
+    margin: 0 auto 22px;
+    width:fit-content;
+    clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+    box-shadow: 0 3px 8px rgba(201,162,39,0.35);
+  }
+  .podium-eyebrow .icon{ display:none; } /* the ribbon banner replaces the small trophy-icon label style */
+  .podium{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items:end;
+    gap: 16px;
+    padding-top: 8px;
+  }
+  .stand{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+  /* Department pill, matching the original's red CASHIER/FORECOURT/NFR pills */
+  .dept-tag{
+    display:inline-block;
+    background: var(--maroon);
+    color:#FFFFFF;
+    font-size:11px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;
+    padding:7px 20px;
+    border-radius:100px;
+    margin-bottom:16px;
+    box-shadow: 0 2px 6px rgba(169,12,29,0.28);
+  }
+  .avatar-wrap{ position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+  .wreath{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
+  .wreath svg{ width:100%; height:100%; display:block; }
+  .wreath ellipse, .wreath path{ fill: currentColor; stroke: currentColor; }
+  .wreath path{ fill:none; stroke-width:1.4; opacity:0.85; }
+  /* All three stands are equal — each is #1 within their own department, so
+     none of them get a "taller" or more prominent treatment than the others. */
+  .stand .wreath{ width:104px; height:104px; color: var(--gold-dark); }
+  .avatar{
+    width:70px; height:70px; border-radius:50%;
+    background: linear-gradient(145deg,#F2E7C0,#E4D49B);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px;
+    color:var(--maroon); border:3px solid var(--gold); box-shadow:0 0 0 3px rgba(201,162,39,0.25);
+    position:relative; z-index:2;
+    overflow:hidden;
+  }
+  .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .avatar .avatar-fallback{ display:none; align-items:center; justify-content:center; width:100%; height:100%; }
+  /* Ribbon nameplate under each photo — the name sits directly on a small gold
+     ribbon shape, matching the original, instead of plain text. */
+  .p-name{
+    display:inline-block;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--maroon);
+    font-weight:800; font-size:13px; letter-spacing:0.02em; text-transform:uppercase;
+    padding:7px 22px;
+    margin-top:6px; margin-bottom:6px;
+    border-radius:100px;
+    box-shadow: 0 2px 5px rgba(201,162,39,0.3);
+  }
+  .p-score{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; color:var(--text); margin-bottom:16px;}
+
+  /* Any department champions beyond the top 3 — shown as simple chips, not forced onto the podium */
+  .podium-overflow{
+    flex-wrap:wrap; gap:10px; margin-top:18px; padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+  .champ-chip{
+    display:flex; align-items:center; gap:10px;
+    background: var(--card-hi); border:1px solid var(--line); border-radius:100px;
+    padding:6px 14px 6px 6px;
+  }
+  .champ-chip .avatar-wrap{ margin-bottom:0; }
+  .champ-chip .wreath{ display:none; }
+  .champ-chip .avatar{ width:32px; height:32px; font-size:13px; border-width:2px; }
+  .chip-dept{ font-size:9.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color: var(--text-faint); }
+  .chip-name{ font-size:12.5px; font-weight:600; }
+
+  .section-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--text-faint); font-weight:600;
+    margin: 26px 0 12px 2px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-label::before{ content:''; width:10px; height:2px; background: var(--maroon); border-radius:2px; flex-shrink:0; }
+
+  /* Soft shadow on white cards against the light page background — matches the
+     original's card style; wasn't needed on the previous dark theme. */
+  .mom-card, .trend-card, .board, .spotlight{
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* small line-icon wrapper used for metric icons + momentum headers */
+  .icon{ display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .icon svg{ width:100%; height:100%; }
+
+  /* MOMENTUM ROW */
+  .momentum{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .mom-card{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  /* Border color matches what's already shown inside each card, rather than
+     an arbitrary new color — green for Most Improved's up-values, amber for
+     Hot Streaks' flame values. */
+  .momentum .mom-card:nth-child(1){ border-top: 3px solid var(--good); }
+  .momentum .mom-card:nth-child(2){ border-top: 3px solid var(--flame); }
+  .mom-head{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;
+    margin-bottom: 10px;
+  }
+  .mom-head .ic{ font-size:15px; }
+  .mom-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 7px 0;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .mom-row:first-of-type{ border-top:none; }
+  .mom-name{ font-weight:600; color:var(--text); }
+  .mom-val{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px; }
+  .mom-val.up{ color: var(--good); }
+  .mom-val.flame{ color: var(--flame); display:flex; align-items:center; gap:4px; }
+
+  /* TRENDS SECTION */
+  .trends{
+    display:grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 12px;
+  }
+  .trend-card{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px 12px;
+  }
+  .trend-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  .trend-title{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;
+  }
+  .trend-sub{ font-size:10.5px; color: var(--text-faint); font-weight:500; }
+  .line-fill{ fill: url(#lineGrad); opacity:0.5; }
+  .line-path{ fill:none; stroke: var(--good); stroke-width:2; }
+  .line-dot{ fill: var(--card); stroke: var(--good); stroke-width:2; }
+  .line-dot.peak{ fill: var(--good); }
+  .avg-line{ stroke: var(--text-faint); stroke-width:1; stroke-dasharray:3 3; }
+  .axis-label{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; fill: var(--text-faint); }
+
+  .bar-chart{ display:flex; align-items:flex-end; gap:8px; height:120px; padding-top:10px; }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .bar-fill-el{ width:100%; border-radius: 5px 5px 2px 2px; position:relative; }
+  .bar-fill-el.weekend{ background: linear-gradient(180deg, var(--good), rgba(51,214,166,0.5)); }
+  .bar-fill-el.weekday{ background: linear-gradient(180deg, rgba(147,165,184,0.55), rgba(147,165,184,0.25)); }
+  .bar-val{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color: var(--text-dim); }
+  .bar-day{ font-size:10px; font-weight:600; color: var(--text-faint); }
+  .bar-col.weekend .bar-val{ color: var(--good); }
+  .spotlight-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .spotlight{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display:flex; align-items:center; gap:12px;
+    position:relative;
+    overflow:hidden;
+  }
+  .spotlight::before{
+    content:''; position:absolute; inset:0 0 auto 0; height:3px;
+  }
+  .spotlight.bad::before{ background: var(--bad); }
+  .spotlight.warn::before{ background: var(--warn); }
+  /* The "little picture" badge beside each KPI, matching the spirit of the
+     original Data Studio dashboard's illustrated mascots/product photos —
+     original iconography here, not a copy of any specific stock illustration. */
+  .m-pic{
+    flex-shrink:0; width:46px; height:46px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #FCEFC0, var(--brand-dim));
+    border: 2px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 2px 5px rgba(201,162,39,0.25);
+  }
+  .m-pic .icon{ width:24px; height:24px; color: var(--maroon); }
+  .spot-tag{
+    display:block;
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em;
+    text-transform:uppercase; font-weight:600; color: var(--text-faint);
+    margin-bottom: 3px;
+  }
+  .m-ring{ flex-shrink:0; width:48px; height:48px; position:relative; }
+  .m-ring svg{ transform: rotate(-90deg); }
+  .m-ring .bg{ stroke: rgba(0,0,0,0.08); }
+  .m-ring .fg{ stroke-linecap:round; transition: stroke-dashoffset 0.3s; }
+  .m-ring .pct{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600;
+  }
+  .m-body{ flex:1; min-width:0; }
+  .m-name{ font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px; }
+  .m-row{ display:flex; align-items:baseline; gap:6px; }
+  .m-actual{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
+  .m-target{ font-size:11.5px; color: var(--text-faint); font-weight:500;}
+
+  .good .fg{ stroke: var(--good); } .good .pct{ color: var(--good); }
+  .warn .fg{ stroke: var(--warn); } .warn .pct{ color: var(--warn); }
+  .bad  .fg{ stroke: var(--bad);  } .bad  .pct{ color: var(--bad); }
+  .none .fg{ stroke: rgba(0,0,0,0.12); } .none .pct{ color: var(--text-faint); }
+  .spotlight.none::before{ background: var(--text-faint); }
+
+  /* LEADERBOARD — simplified */
+  .boards{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    align-items:start;
+    gap: 12px;
+  }
+  /* Holds Cashier + Forecourt stacked in the shared column — NFR gets its own
+     full column separately. Each board keeps its own card/border/header, so
+     they read as clearly distinct even while sharing a column. */
+  .board-stack{
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .board{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+  }
+  .board-head{
+    padding: 11px 14px 10px;
+    border-bottom: 2px solid var(--gold);
+    background: linear-gradient(180deg, rgba(247,213,77,0.14), transparent);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:13.5px; color: var(--maroon);
+  }
+  /* Small color accent so the two stacked boards (Cashier/Forecourt) are
+     distinguishable at a glance, not just by their text label. */
+  .board-stack .board:nth-child(1){ border-top: 3px solid var(--maroon); }
+  .board-stack .board:nth-child(2){ border-top: 3px solid var(--gold-dark); }
+  /* NFR sits as its own direct child of .boards (not inside .board-stack) —
+     give it a matching accent so it doesn't look plain next to the other two. */
+  .boards > .board{ border-top: 3px solid #7B4B94; }
+  .row{
+    display:flex; align-items:center; gap:9px;
+    padding: 7px 14px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+  }
+  .row:first-of-type{ border-top:none; }
+  .rk{
+    width:16px; text-align:center; font-family:'IBM Plex Mono',monospace;
+    font-weight:600; font-size:11px; color: var(--text-faint); flex-shrink:0;
+  }
+  .row.r1 .rk{ color: var(--gold-dark); }
+  .row.r2 .rk{ color: var(--silver); }
+  .row.r3 .rk{ color: var(--bronze); }
+  .r-avatar{
+    width:34px; height:34px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background: linear-gradient(145deg,#F2E7C0,#E4D49B);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--maroon);
+    border: 1.5px solid var(--gold);
+  }
+  .r-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .r-avatar .avatar-fallback{ display:none; align-items:center; justify-content:center; width:100%; height:100%; }
+  .rname{ flex:1; font-weight:600; color: var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rscore{ font-family:'IBM Plex Mono',monospace; font-weight:600; color: var(--text-dim); font-size:11.5px; text-align:right; flex-shrink:0; }
+  .rgap{ font-family:'IBM Plex Mono',monospace; font-size:10px; color: var(--text-faint); text-align:right; min-width:52px; flex-shrink:0; }
+  .rgap.first{ color: var(--good); }
+
+  footer{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top: 30px; color: var(--text-faint); font-size:11.5px; font-weight:500;
+  }
+  .footer-logos{ display:flex; align-items:center; gap:2px; }
+  .shell-badge{
+    width:22px; height:22px; border-radius:6px; background:var(--shell-red);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10px; color:white;
+  }
+  .footer-logo{ height:20px; width:auto; display:none; }
+
+  /* TV rotation mode — applied only when the page is loaded with ?tv=1 in the URL.
+     The physical TV is mounted rotated 90°, but the browser/OS on that device has
+     no reliable native rotation support, so the content is rotated here in software
+     instead. This does nothing unless the URL flag is present, so the normal link
+     still displays correctly landscape on a phone, laptop, or any other screen.
+
+     Split into two layers on purpose, kept independent so each is simple to reason
+     about correctly:
+     - #tv-stage is a STATIC outer wrapper, sized and rotated ONCE, that never
+       changes afterward — it's just "a screen-sized box, oriented correctly".
+     - .wrap sits inside it and only ever gets a single uniform scale applied
+       (see fitTvDisplay), computed in .wrap's own normal, pre-rotation local
+       frame, decoupled from the rotation math entirely. There is no scrolling —
+       that was tried and deliberately removed; everything must fit statically. */
+  body.tv-rotate{ overflow:hidden; margin:0; }
+  #tv-stage{
+    position:fixed;
+    top:50%; left:50%;
+    width:100vh;   /* becomes the visual HEIGHT after rotation */
+    height:100vw;  /* becomes the visual WIDTH after rotation */
+    overflow:hidden;
+    transform-origin:center center;
+    transform: translate(-50%,-50%) rotate(-90deg);
+    /* Hidden until fitTvDisplay finishes sizing everything correctly — avoids
+       any visible snap/slide while data loads and the fit gets computed. */
+    opacity:0;
+    transition: opacity 0.25s ease;
+  }
+  #tv-stage.tv-ready{ opacity:1; }
+  #tv-stage .wrap{
+    position:absolute;
+    top:0; left:50%;
+    width:100vh;
+    max-width:none; /* the base .wrap has a 1160px desktop cap — drop it here so the
+                       layout actually uses the full available portrait width instead
+                       of sitting narrow and centered with unused space on both sides */
+    margin:0;
+    transform-origin: top center;
+    /* Default centering so .wrap is never sitting mispositioned on first paint —
+       fitTvDisplay's JS later overwrites this same property to add the fit
+       scale, but this ensures nothing is ever visibly off-center beforehand. */
+    transform: translateX(-50%);
+  }
+
+  /* TV compact mode — tightens spacing throughout so the dashboard's natural
+     (unscaled) height gets much closer to matching one screen's worth of space.
+     This matters because scaling alone can't both fill the width AND fit the
+     height without distortion unless the content's natural shape is already
+     close to the screen's shape — this is the actual fix for that, not the
+     scale transform. Only active in ?tv=1 mode; the normal landscape view is
+     untouched. */
+  body.tv-rotate .podium-card{ padding: 16px 20px 0; margin-bottom: 12px; }
+  body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; }
+  body.tv-rotate .section-label{ margin: 14px 0 8px 2px; }
+  body.tv-rotate .momentum{ gap: 8px; }
+  body.tv-rotate .mom-card{ padding: 10px 12px; }
+  body.tv-rotate .mom-head{ margin-bottom: 6px; }
+  body.tv-rotate .mom-row{ padding: 5px 0; }
+  body.tv-rotate .trends{ gap: 8px; }
+  body.tv-rotate .trend-card{ padding: 10px 12px 8px; }
+  body.tv-rotate .trend-head{ margin-bottom: 6px; }
+  body.tv-rotate .bar-chart{ height: 90px; padding-top: 6px; }
+  body.tv-rotate .spotlight-grid{ grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
+  body.tv-rotate .spotlight{ padding: 12px 14px; gap: 12px; align-items: flex-start; }
+  body.tv-rotate .m-ring{ margin-top: 2px; } /* small nudge to visually line up with the tag+name's top edge */
+  body.tv-rotate .boards{ gap: 8px; }
+  body.tv-rotate .board-head{ padding: 8px 12px 7px; }
+  body.tv-rotate .row{ padding: 5px 12px; }
+  /* TV mode leaderboard: just rank, avatar, and current score — no name,
+     no "Leader"/"+X to #Y" gap text, per request for a minimal, glanceable view. */
+  body.tv-rotate .rgap{ display: none; }
+  body.tv-rotate .rname{ display: none; }
+
+  @media (max-width: 760px){
+    .spotlight-grid{ grid-template-columns: 1fr; }
+    .boards{ grid-template-columns: 1fr; }
+    .momentum{ grid-template-columns: 1fr; }
+    .trends{ grid-template-columns: 1fr; }
+    .brand h1{ font-size:26px; }
+  }  .err-banner{
+    background: var(--bad-dim); border:1px solid var(--bad); color: var(--bad);
+    border-radius: 10px; padding: 10px 16px; font-size:12.5px; font-weight:600;
+    margin-bottom: 16px; display:none;
+  }
+
+  /* ---- Insights-page-specific additions (not part of the main dashboard) ---- */
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12.5px; font-weight:600; color: var(--text-dim);
+    text-decoration:none; padding:8px 14px; border-radius:100px;
+    background: var(--card); border:1px solid var(--line);
+  }
+  .back-link:hover{ color: var(--maroon); }
+
+  .insight-card{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .insight-head{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px;
+    color: var(--maroon); margin-bottom: 4px;
+  }
+  .insight-sub{ font-size:12.5px; color: var(--text-faint); margin-bottom:16px; }
+
+  .staff-select{
+    width:100%; max-width:320px;
+    padding:10px 14px; font-size:13.5px; font-weight:600; color:var(--text);
+    background: var(--bg-2); border:1.5px solid var(--gold); border-radius:10px;
+    font-family:'Inter',sans-serif; margin-bottom:18px;
+  }
+  .staff-profile{
+    display:flex; align-items:center; gap:14px; margin-bottom:18px;
+    padding-bottom:16px; border-bottom:1px solid var(--line);
+  }
+  .staff-profile .avatar{ width:56px; height:56px; }
+  .staff-profile-name{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; }
+  .staff-profile-dept{ font-size:12px; color: var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; }
+  .staff-stats{ display:flex; gap:22px; margin-left:auto; text-align:right; }
+  .staff-stat-val{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
+  .staff-stat-label{ font-size:11px; color: var(--text-faint); font-weight:600; }
+
+  .mini-metric-row{
+    display:flex; align-items:center; gap:12px; padding:7px 0;
+    border-top:1px solid var(--line); font-size:13px;
+  }
+  .mini-metric-row:first-child{ border-top:none; }
+  .mini-metric-name{ flex:1; font-weight:600; color: var(--text-dim); }
+  .mini-metric-val{ font-family:'IBM Plex Mono',monospace; font-weight:600; }
+
+  .dept-legend{ display:flex; gap:18px; margin-bottom:12px; flex-wrap:wrap; }
+  .dept-legend-item{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; }
+  .dept-legend-dot{ width:10px; height:10px; border-radius:50%; }
+
+  .empty-state{ color: var(--text-faint); font-size:13px; padding:20px 0; text-align:center; }
+
+  @media (max-width: 760px){
+    .staff-stats{ margin-left:0; margin-top:12px; }
+    .staff-profile{ flex-wrap:wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="err-banner" id="err-banner"></div>
+
+  <header>
+    <div class="brand-row">
+      <img src="./assets/shell-rcs-logo.png" class="brand-logo" id="brand-logo" alt="" onerror="this.style.display='none'" onload="this.style.display='block'">
+      <div class="brand">
+        <h1>One<span>Track</span> <span style="color:var(--text-faint); font-size:20px;">Insights</span></h1>
+      </div>
+    </div>
+    <a class="back-link" href="./classic-theme.html">&larr; Back to Dashboard</a>
+  </header>
+
+  <div class="insight-card">
+    <div class="insight-head">Staff Drill-Down</div>
+    <div class="insight-sub">Pick anyone to see their own history — not just today's snapshot.</div>
+    <select class="staff-select" id="staff-select"></select>
+    <div id="staff-detail"><div class="empty-state">Select a name above to see their history.</div></div>
+  </div>
+
+  <div class="insight-card">
+    <div class="insight-head">Department Trend Comparison</div>
+    <div class="insight-sub">Each department shown as % of its own typical daily total — not raw points — so the three lines are genuinely comparable to each other, even though Cashier, Forecourt, and NFR naturally operate at very different scales.</div>
+    <div class="dept-legend" id="dept-legend"></div>
+    <svg id="dept-trend-svg" width="100%" height="220" viewBox="0 0 900 220" preserveAspectRatio="none"></svg>
+  </div>
+
+  <footer>
+    <div class="footer-logos">
+      <img src="./assets/shell-logo.png" class="footer-logo" id="footer-logo" alt=""
+        onerror="this.style.display='none'; document.getElementById('shell-badge-fallback').style.display='flex';"
+        onload="this.style.display='block'; document.getElementById('shell-badge-fallback').style.display='none';">
+      <div class="shell-badge" id="shell-badge-fallback" style="display:none">S</div>
+      <img src="./assets/rcs-logo.png" class="footer-logo" id="footer-logo-rcs" alt=""
+        onerror="this.style.display='none'"
+        onload="this.style.display='block'">
+    </div>
+    <span id="footer-updated">Built with Google Sheets Data</span>
+  </footer>
+
+</div>
+
+<script>
+  // ============================================================
+  // Shared boilerplate — identical to classic-theme.html's, since this page
+  // reads from the same Apps Script proxy and Clean_Daily_Input tab.
+  // ============================================================
+  const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyEuxZ_SFPJv3cj7smgLtKn0NnQuAUyYNoBv6LXMP7gJduN4VxsnrLuekNhJnIrDQnb/exec';
+  const REFRESH_MS = 5 * 60 * 1000;
+
+  const METRIC_NAMES = [
+    'Combo Bag','Promo Item','Shell Cafe Promo','Shell Cafe CPD','Shell Cafe Combo',
+    'Refresh CPD','Refresh Meal','Five Star Promo','Daily Fresh Sales','Customer Service','Toys'
+  ];
+
+  async function fetchTab(tabName) {
+    const url = `${PROXY_URL}?sheet=${encodeURIComponent(tabName)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not load tab "${tabName}" (HTTP ${res.status})`);
+    const parsed = await res.json();
+    if (parsed.error) throw new Error(`Sheet error on "${tabName}": ${parsed.error}`);
+    return { tabName: parsed.tabName, headers: parsed.headers, rows: parsed.rows };
+  }
+
+  function makeColFinder(tabName, headers) {
+    const cache = {};
+    const col = function(label, fallbackIdx) {
+      if (cache[label] !== undefined) return cache[label];
+      let idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
+      if (idx === -1 && fallbackIdx !== undefined) idx = fallbackIdx;
+      if (idx === -1) throw new Error(`Column "${label}" not found in "${tabName}" — check the header row hasn't been renamed or removed.`);
+      cache[label] = idx;
+      return idx;
+    };
+    col.any = function(labels) {
+      for (const label of labels) {
+        const idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
+        if (idx !== -1) return idx;
+      }
+      throw new Error(`None of these columns were found in "${tabName}": ${labels.join(', ')} — check the header row.`);
+    };
+    return col;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('err-banner');
+    const isColumnError = /^Column "/.test(msg);
+    el.textContent = isColumnError ? `⚠ ${msg}` : `⚠ ${msg} — check the Apps Script proxy is deployed and PROXY_URL is set correctly.`;
+    el.style.display = 'block';
+  }
+
+  const ACRONYMS = new Set(['NFR']);
+  function titleCase(s) {
+    if (!s) return '';
+    return String(s).trim().split(/\s+/).map(w => {
+      const upper = w.toUpperCase();
+      if (ACRONYMS.has(upper)) return upper;
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    }).join(' ');
+  }
+  function normKey(s) { return String(s || '').trim().toLowerCase(); }
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function parseGvizDate(v) {
+    if (v == null) return null;
+    if (v instanceof Date) return v;
+    const m = String(v).match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+    if (m) return new Date(+m[1], +m[2], +m[3], +m[4]||0, +m[5]||0, +m[6]||0);
+    const d = new Date(v);
+    return isNaN(d) ? null : d;
+  }
+
+  const METRIC_ICON = {
+    'Combo Bag':'bag','Promo Item':'tag','Shell Cafe Promo':'cup','Shell Cafe CPD':'cup',
+    'Shell Cafe Combo':'combo','Refresh CPD':'droplet','Refresh Meal':'meal',
+    'Five Star Promo':'star','Daily Fresh Sales':'leaf','Customer Service':'headset','Toys':'block',
+  };
+
+  const DEPT_COLORS = { cashier: '#A90C1D', forecourt: '#C9A227', nfr: '#7B4B94' };
+
+  // ============================================================
+  // Data loading
+  // ============================================================
+  let DAILY_ROWS = []; // normalized: { date, name, nameKey, dept, deptKey, weighted, metrics:{name:val} }
+
+  async function loadInsights() {
+    document.getElementById('err-banner').style.display = 'none';
+    const { tabName, headers, rows } = await fetchTab('Clean_Daily_Input');
+    const col = makeColFinder(tabName, headers);
+    const iDate = col('Date');
+    const iName = col('Site Hero');
+    const iDept = col('Department');
+    const iWeighted = col('Weighted Points');
+    const metricIdx = METRIC_NAMES.map(name => col(name));
+
+    DAILY_ROWS = rows.map(r => {
+      const metrics = {};
+      METRIC_NAMES.forEach((name, i) => { metrics[name] = typeof r[metricIdx[i]] === 'number' ? r[metricIdx[i]] : 0; });
+      return {
+        date: parseGvizDate(r[iDate]),
+        name: r[iName], nameKey: normKey(r[iName]),
+        dept: r[iDept], deptKey: normKey(r[iDept]),
+        weighted: typeof r[iWeighted] === 'number' ? r[iWeighted] : 0,
+        metrics,
+      };
+    }).filter(r => r.date && r.nameKey && r.deptKey);
+
+    populateStaffSelect();
+    renderDepartmentComparison();
+
+    document.getElementById('footer-updated').textContent =
+      `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+  }
+
+  // ============================================================
+  // Staff drill-down
+  // ============================================================
+  function populateStaffSelect() {
+    const people = {};
+    DAILY_ROWS.forEach(r => {
+      if (!people[r.nameKey]) people[r.nameKey] = { label: titleCase(r.name), dept: titleCase(r.dept) };
+    });
+    const sorted = Object.entries(people).sort((a,b) => a[1].label.localeCompare(b[1].label));
+
+    const sel = document.getElementById('staff-select');
+    sel.innerHTML = `<option value="">— Select a staff member —</option>` +
+      sorted.map(([key, p]) => `<option value="${escapeHtml(key)}">${escapeHtml(p.label)} (${escapeHtml(p.dept)})</option>`).join('');
+    sel.addEventListener('change', () => renderStaffDetail(sel.value));
+  }
+
+  function renderStaffDetail(nameKey) {
+    const el = document.getElementById('staff-detail');
+    if (!nameKey) { el.innerHTML = `<div class="empty-state">Select a name above to see their history.</div>`; return; }
+
+    const entries = DAILY_ROWS.filter(r => r.nameKey === nameKey).sort((a,b) => a.date - b.date);
+    if (!entries.length) { el.innerHTML = `<div class="empty-state">No data found for this person.</div>`; return; }
+
+    const label = titleCase(entries[0].name);
+    const dept = titleCase(entries[0].dept);
+    const totalPoints = entries.reduce((s,e) => s + e.weighted, 0);
+    const activeDays = entries.filter(e => e.weighted > 0).length;
+
+    // Current streak — consecutive most-recent active days
+    const daySet = new Set(entries.filter(e => e.weighted > 0).map(e => e.date.toDateString()));
+    const maxDate = entries[entries.length-1].date;
+    let streak = 0, cursor = new Date(maxDate);
+    for (let i = 0; i < 90; i++) {
+      if (!daySet.has(cursor.toDateString())) break;
+      streak++; cursor.setDate(cursor.getDate() - 1);
+    }
+
+    // Per-metric totals for this person, sorted descending
+    const metricTotals = METRIC_NAMES.map(name => ({
+      name, total: entries.reduce((s,e) => s + (e.metrics[name] || 0), 0)
+    })).filter(m => m.total > 0).sort((a,b) => b.total - a.total);
+
+    // Daily weighted-points trend line
+    const dates = entries.map(e => e.date.toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
+    const values = entries.map(e => e.weighted);
+    const svg = buildSingleLineSVG(values);
+
+    el.innerHTML = `
+      <div class="staff-profile">
+        <div class="avatar" style="border-color:var(--gold)"><span class="avatar-fallback" style="display:flex">${escapeHtml(label.charAt(0))}</span></div>
+        <div>
+          <div class="staff-profile-name">${escapeHtml(label)}</div>
+          <div class="staff-profile-dept">${escapeHtml(dept)}</div>
+        </div>
+        <div class="staff-stats">
+          <div><div class="staff-stat-val">${totalPoints.toLocaleString()}</div><div class="staff-stat-label">Total Points</div></div>
+          <div><div class="staff-stat-val">${activeDays}</div><div class="staff-stat-label">Active Days</div></div>
+          <div><div class="staff-stat-val">${streak}d</div><div class="staff-stat-label">Current Streak</div></div>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px; color:var(--text-faint); font-weight:600; margin-bottom:8px;">DAILY POINTS — ${escapeHtml(dates[0])} to ${escapeHtml(dates[dates.length-1])}</div>
+        ${svg}
+      </div>
+      <div style="font-size:12px; color:var(--text-faint); font-weight:600; margin-bottom:6px;">CONTRIBUTION BY METRIC</div>
+      ${metricTotals.map(m => `
+        <div class="mini-metric-row">
+          <div class="mini-metric-name">${escapeHtml(m.name)}</div>
+          <div class="mini-metric-val">${m.total.toLocaleString()}</div>
+        </div>`).join('') || '<div class="empty-state">No metric activity recorded.</div>'}
+    `;
+  }
+
+  function buildSingleLineSVG(values) {
+    const W = 640, H = 130, padL = 4, padR = 4, padT = 10, padB = 6;
+    const n = values.length;
+    if (n < 2) return '<div class="empty-state">Not enough history yet for a trend line.</div>';
+    const maxV = Math.max(...values, 1);
+    const x = i => padL + (i/(n-1)) * (W - padL - padR);
+    const y = v => padT + (1 - v/maxV) * (H - padT - padB);
+    const pathD = values.map((v,i) => `${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+    const fillD = pathD + ` L ${x(n-1).toFixed(1)} ${y(0).toFixed(1)} L ${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
+    return `<svg width="100%" height="130" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <defs><linearGradient id="staffGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3FAE4A" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#3FAE4A" stop-opacity="0"/>
+      </linearGradient></defs>
+      <path d="${fillD}" fill="url(#staffGrad)"/>
+      <path d="${pathD}" fill="none" stroke="#3FAE4A" stroke-width="2"/>
+    </svg>`;
+  }
+
+  // ============================================================
+  // Department trend comparison — each department shown as % of its OWN
+  // median daily total, so genuinely different-scale departments become
+  // visually comparable on one chart.
+  // ============================================================
+  function renderDepartmentComparison() {
+    const byDeptDate = {}; // deptKey -> { dateStr -> total }
+    const allDates = new Set();
+    DAILY_ROWS.forEach(r => {
+      const dateStr = r.date.toDateString();
+      allDates.add(dateStr);
+      if (!byDeptDate[r.deptKey]) byDeptDate[r.deptKey] = {};
+      byDeptDate[r.deptKey][dateStr] = (byDeptDate[r.deptKey][dateStr] || 0) + r.weighted;
+    });
+
+    const sortedDates = Array.from(allDates).sort((a,b) => new Date(a) - new Date(b));
+    const depts = Object.keys(byDeptDate);
+    if (!depts.length || sortedDates.length < 2) {
+      document.getElementById('dept-trend-svg').outerHTML = '<div class="empty-state">Not enough history yet.</div>';
+      return;
+    }
+
+    // Median daily total per department (own baseline), ignoring zero/no-data days
+    function median(arr) {
+      const s = arr.filter(v => v > 0).sort((a,b) => a-b);
+      if (!s.length) return 1;
+      const mid = Math.floor(s.length/2);
+      return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
+    }
+    const baselines = {};
+    depts.forEach(d => { baselines[d] = median(sortedDates.map(dt => byDeptDate[d][dt] || 0)); });
+
+    const W = 900, H = 220, padL = 6, padR = 6, padT = 14, padB = 20;
+    const capMax = 250; // cap display at 250% of baseline so one wild day doesn't flatten the rest
+    const n = sortedDates.length;
+    const x = i => padL + (i/(n-1)) * (W - padL - padR);
+    const y = v => padT + (1 - Math.min(v,capMax)/capMax) * (H - padT - padB);
+
+    let svgInner = `<line x1="${padL}" y1="${y(100).toFixed(1)}" x2="${W-padR}" y2="${y(100).toFixed(1)}" stroke="var(--text-faint)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="${W-padR}" y="${y(100)-4}" text-anchor="end" font-size="9" fill="var(--text-faint)" font-family="IBM Plex Mono, monospace">100% of own typical day</text>`;
+
+    depts.forEach(d => {
+      const color = DEPT_COLORS[d] || '#888';
+      const vals = sortedDates.map(dt => ((byDeptDate[d][dt] || 0) / baselines[d]) * 100);
+      const pathD = vals.map((v,i) => `${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+      svgInner += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.9"/>`;
+    });
+
+    svgInner += `<text x="${padL}" y="${H-4}" font-size="9" fill="var(--text-faint)" font-family="IBM Plex Mono, monospace">${new Date(sortedDates[0]).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</text>
+      <text x="${W-padR}" y="${H-4}" text-anchor="end" font-size="9" fill="var(--text-faint)" font-family="IBM Plex Mono, monospace">${new Date(sortedDates[n-1]).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</text>`;
+
+    document.getElementById('dept-trend-svg').innerHTML = svgInner;
+
+    document.getElementById('dept-legend').innerHTML = depts.map(d => `
+      <div class="dept-legend-item">
+        <div class="dept-legend-dot" style="background:${DEPT_COLORS[d] || '#888'}"></div>
+        ${escapeHtml(titleCase(d))}
+      </div>`).join('');
+  }
+
+  loadInsights().catch(err => {
+    console.error(err);
+    showError(err.message || 'Could not load insights data');
+  });
+  setInterval(() => {
+    loadInsights().catch(err => {
+      console.error(err);
+      showError(err.message || 'Could not refresh insights data');
+    });
+  }, REFRESH_MS);
+</script>
+
+</body>
+</html>
