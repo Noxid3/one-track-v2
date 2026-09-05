@@ -485,6 +485,14 @@
     border-radius: 10px; padding: 10px 16px; font-size:12.5px; font-weight:600;
     margin-bottom: 16px; display:none;
   }
+  .empty-state{
+    color: var(--text-faint); font-size:13px; text-align:center;
+    padding: 24px 16px; grid-column: 1 / -1;
+  }
+  .section-tag{
+    font-size:10px; font-weight:700; color: var(--text-faint); text-transform:none;
+    letter-spacing:normal; margin-left:2px;
+  }
 </style>
 </head>
 <body>
@@ -511,7 +519,7 @@
     <div class="podium-overflow" id="podium-overflow" style="display:none"></div>
   </div>
 
-  <div class="section-label">Leaderboard</div>
+  <div class="section-label">Leaderboard <span class="section-tag">— this month</span></div>
   <div class="boards" id="boards-wrap">
     <!-- board columns injected dynamically, one per department -->
   </div>
@@ -527,7 +535,7 @@
     </div>
   </div>
 
-  <div class="section-label">KPI Progress</div>
+  <div class="section-label">KPI Progress <span class="section-tag">— this month</span></div>
   <div class="spotlight-grid" id="spotlight"></div>
 
   <div class="section-label">Trends</div>
@@ -768,6 +776,15 @@
     return isNaN(d) ? null : d;
   }
 
+  // Used by KPI Progress to match the same calendar-month-to-date window the
+  // Podium/Leaderboard already use (via their own sheet-side formulas) — kept
+  // consistent on purpose so every section of the dashboard represents the
+  // same time period, rather than silently mixing different windows.
+  function isCurrentMonth(d) {
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
   // ============================================================
   // MAIN
   // ============================================================
@@ -893,6 +910,12 @@
     const n = top3.length;
 
     const el = document.getElementById('podium');
+    if (!champions.length) {
+      el.style.gridTemplateColumns = '1fr';
+      el.innerHTML = `<div class="empty-state">No department champions yet this month — check back once today's activity is logged.</div>`;
+      document.getElementById('podium-overflow').style.display = 'none';
+      return;
+    }
     el.style.gridTemplateColumns = `repeat(${Math.max(n,1)}, 1fr)`;
     el.innerHTML = top3.map(c => `
       <div class="stand">
@@ -980,7 +1003,7 @@
     if (nfrEntry) {
       html += buildBoardHTML(nfrEntry.label, nfrEntry.people);
     }
-    wrap.innerHTML = html;
+    wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
   }
 
   // ---- Performance vs Target: sum actuals (daily input) vs sum targets (target master) ----
@@ -990,11 +1013,32 @@
                           { tabName: targetTab, headers: targetHeaders, rows: targetMaster }) {
     const dailyCol = makeColFinder(dailyTab, dailyHeaders);
     const targetCol = makeColFinder(targetTab, targetHeaders);
+    const iDailyDate = dailyCol('Date');
+    const iTargetDate = targetCol('Date');
     const dailyIdx = METRIC_NAMES.map(name => dailyCol(name));
     const targetIdx = METRIC_NAMES.map(name => targetCol(name));
 
+    // Filtered to the current calendar month, matching the same window the
+    // Podium/Leaderboard use — this section previously summed ALL-TIME history
+    // with no date filter at all, which is exactly the inconsistency that made
+    // the dashboard's different sections hard to compare against each other.
+    const monthDaily = dailyInput.filter(row => {
+      const d = parseGvizDate(row[iDailyDate]);
+      return d && isCurrentMonth(d);
+    });
+    const monthTarget = targetMaster.filter(row => {
+      const d = parseGvizDate(row[iTargetDate]);
+      return d && isCurrentMonth(d);
+    });
+
+    const spotlightEl = document.getElementById('spotlight');
+    if (!monthDaily.length) {
+      spotlightEl.innerHTML = `<div class="empty-state">No KPI activity logged yet this month — check back once today's numbers are in.</div>`;
+      return;
+    }
+
     const actualTotals = METRIC_NAMES.map(() => 0);
-    dailyInput.forEach(row => {
+    monthDaily.forEach(row => {
       dailyIdx.forEach((idx, i) => {
         const v = row[idx];
         if (typeof v === 'number') actualTotals[i] += v;
@@ -1002,7 +1046,7 @@
     });
 
     const targetTotals = METRIC_NAMES.map(() => 0);
-    targetMaster.forEach(row => {
+    monthTarget.forEach(row => {
       targetIdx.forEach((idx, i) => {
         const v = row[idx];
         if (typeof v === 'number') targetTotals[i] += v;
@@ -1025,7 +1069,6 @@
 
     const R = 22, C = 2*Math.PI*R;
 
-    const spotlightEl = document.getElementById('spotlight');
     spotlightEl.innerHTML = '';
     orderedMetrics.forEach(m => {
       const hasTarget = m.pct !== null;
