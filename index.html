@@ -33,10 +33,15 @@
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
-    background:
+    /* Background texture — drop a seamless/tileable image at ./assets/texture.png
+       and it fills the whole page automatically, no other code changes needed.
+       If that file is missing, only the two color washes below show (nothing breaks). */
+    background-image:
+      url('./assets/texture.png'),
       radial-gradient(1200px 500px at 15% -10%, rgba(51,214,166,0.06), transparent 60%),
-      radial-gradient(900px 500px at 100% 0%, rgba(232,196,104,0.05), transparent 55%),
-      var(--bg);
+      radial-gradient(900px 500px at 100% 0%, rgba(232,196,104,0.05), transparent 55%);
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-color: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
     padding: 28px 20px 60px;
@@ -364,31 +369,15 @@
   }
   .footer-logo{ height:20px; width:auto; display:none; }
 
-  /* TV rotation mode — applied only when the page is loaded with ?tv=1 in the URL.
-     The physical TV is mounted rotated 90°, but the browser/OS on that device has
-     no reliable native rotation support, so the content is rotated here in software
-     instead. This does nothing unless the URL flag is present, so the normal link
-     still displays correctly landscape on a phone, laptop, or any other screen.
-
-     Split into two layers on purpose, kept independent so each is simple to reason
-     about correctly:
-     - #tv-stage is a STATIC outer wrapper, sized and rotated ONCE, that never
-       changes afterward — it's just "a screen-sized box, oriented correctly".
-     - .wrap sits inside it and only ever gets a single uniform scale applied
-       (see fitTvDisplay), computed in .wrap's own normal, pre-rotation local
-       frame, decoupled from the rotation math entirely. There is no scrolling —
-       that was tried and deliberately removed; everything must fit statically. */
   body.tv-rotate{ overflow:hidden; margin:0; }
   #tv-stage{
     position:fixed;
     top:50%; left:50%;
-    width:100vh;   /* becomes the visual HEIGHT after rotation */
-    height:100vw;  /* becomes the visual WIDTH after rotation */
+    width:100vh;
+    height:100vw;
     overflow:hidden;
     transform-origin:center center;
     transform: translate(-50%,-50%) rotate(-90deg);
-    /* Hidden until fitTvDisplay finishes sizing everything correctly — avoids
-       any visible snap/slide while data loads and the fit gets computed. */
     opacity:0;
     transition: opacity 0.25s ease;
   }
@@ -397,24 +386,12 @@
     position:absolute;
     top:0; left:50%;
     width:100vh;
-    max-width:none; /* the base .wrap has a 1160px desktop cap — drop it here so the
-                       layout actually uses the full available portrait width instead
-                       of sitting narrow and centered with unused space on both sides */
+    max-width:none;
     margin:0;
     transform-origin: top center;
-    /* Default centering so .wrap is never sitting mispositioned on first paint —
-       fitTvDisplay's JS later overwrites this same property to add the fit
-       scale, but this ensures nothing is ever visibly off-center beforehand. */
     transform: translateX(-50%);
   }
 
-  /* TV compact mode — tightens spacing throughout so the dashboard's natural
-     (unscaled) height gets much closer to matching one screen's worth of space.
-     This matters because scaling alone can't both fill the width AND fit the
-     height without distortion unless the content's natural shape is already
-     close to the screen's shape — this is the actual fix for that, not the
-     scale transform. Only active in ?tv=1 mode; the normal landscape view is
-     untouched. */
   body.tv-rotate .podium-card{ padding: 16px 20px 0; margin-bottom: 12px; }
   body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; }
   body.tv-rotate .section-label{ margin: 14px 0 8px 2px; }
@@ -428,13 +405,11 @@
   body.tv-rotate .bar-chart{ height: 90px; padding-top: 6px; }
   body.tv-rotate .spotlight-grid{ grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
   body.tv-rotate .spotlight{ padding: 12px 14px; gap: 12px; align-items: flex-start; }
-  body.tv-rotate .m-ring{ margin-top: 2px; } /* small nudge to visually line up with the tag+name's top edge */
+  body.tv-rotate .m-ring{ margin-top: 2px; }
   body.tv-rotate .ml-row{ padding: 6px 14px; }
   body.tv-rotate .boards{ gap: 8px; }
   body.tv-rotate .board-head{ padding: 8px 12px 7px; }
   body.tv-rotate .row{ padding: 5px 12px; }
-  /* TV mode leaderboard: just rank, avatar, and current score — no name,
-     no "Leader"/"+X to #Y" gap text, per request for a minimal, glanceable view. */
   body.tv-rotate .rgap{ display: none; }
   body.tv-rotate .rname{ display: none; }
 
@@ -489,7 +464,7 @@
     <div class="trend-card">
       <div class="trend-head">
         <span class="trend-title">Achievement Trend</span>
-        <span class="trend-sub" id="trend-range">1 Jul \u2013 10 Aug</span>
+        <span class="trend-sub" id="trend-range">1 Jul – 10 Aug</span>
       </div>
       <svg id="trend-svg" width="100%" height="130" viewBox="0 0 640 130" preserveAspectRatio="none"></svg>
     </div>
@@ -529,19 +504,9 @@
 </div>
 
 <script>
-  // ============================================================
-  // CONFIG — your Apps Script proxy (see the setup guide for how to deploy this)
-  // ============================================================
-  // No Sheet ID here anymore — the Apps Script runs bound to the Sheet directly,
-  // and the Sheet itself no longer needs to be publicly link-shared at all.
   const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyEuxZ_SFPJv3cj7smgLtKn0NnQuAUyYNoBv6LXMP7gJduN4VxsnrLuekNhJnIrDQnb/exec';
-  const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
+  const REFRESH_MS = 5 * 60 * 1000;
 
-  // TV rotation mode — add ?tv=1 to the URL used on the physically-rotated station
-  // TV to pre-rotate the content 90° in software. Every other visitor (phone,
-  // laptop, testing) uses the plain URL and sees the normal landscape layout.
-  // Wraps .wrap in a #tv-stage div that handles the rotation, so .wrap itself
-  // stays free to handle scaling/scrolling independently (see fitTvDisplay below).
   if (new URLSearchParams(location.search).get('tv') === '1') {
     document.body.classList.add('tv-rotate');
     const wrapEl = document.querySelector('.wrap');
@@ -551,19 +516,11 @@
     stage.appendChild(wrapEl);
   }
 
-  // Metric columns, in the exact order they appear in both
-  // Clean_Daily_Input (starting col index 3) and Clean_Target_Master (starting col index 1)
   const METRIC_NAMES = [
     'Combo Bag','Promo Item','Shell Cafe Promo','Shell Cafe CPD','Shell Cafe Combo',
     'Refresh CPD','Refresh Meal','Five Star Promo','Daily Fresh Sales','Customer Service','Toys'
   ];
 
-  // ============================================================
-  // Fetch helper — calls the Apps Script proxy instead of Google's public gviz
-  // endpoint, so the Sheet itself never needs to be link-shared. Returns the
-  // same { tabName, headers, rows } shape as before, so every render function
-  // downstream needed zero changes.
-  // ============================================================
   async function fetchTab(tabName) {
     const url = `${PROXY_URL}?sheet=${encodeURIComponent(tabName)}`;
     const res = await fetch(url);
@@ -573,12 +530,6 @@
     return { tabName: parsed.tabName, headers: parsed.headers, rows: parsed.rows };
   }
 
-  // Builds a column-index lookup for one tab's headers, matched by name
-  // (case-insensitive, trimmed) instead of a fixed position. A reordered or
-  // renamed column is caught immediately with a clear error, instead of silently
-  // attributing data to the wrong metric. `fallbackIdx` is only for the couple of
-  // columns in Dept_Ranking_Clean whose header cell is genuinely blank in the sheet —
-  // if you ever add a header there, this will prefer the name automatically.
   function makeColFinder(tabName, headers) {
     const cache = {};
     const col = function(label, fallbackIdx) {
@@ -591,9 +542,6 @@
       cache[label] = idx;
       return idx;
     };
-    // Tries each candidate name in order, returning the first that matches —
-    // useful when a column has been intentionally renamed and either the old
-    // or new label should still work (e.g. "Total Items" -> "Total Points").
     col.any = function(labels) {
       for (const label of labels) {
         const idx = headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
@@ -606,8 +554,6 @@
 
   function showError(msg) {
     const el = document.getElementById('err-banner');
-    // Column/structure errors are already self-explanatory — don't tack on the
-    // proxy hint, which would be misleading for that case.
     const isColumnError = /^Column "/.test(msg);
     el.textContent = isColumnError
       ? `⚠ ${msg}`
@@ -615,12 +561,8 @@
     el.style.display = 'block';
   }
 
-  // Department codes that should stay fully uppercase instead of being title-cased.
   const ACRONYMS = new Set(['NFR']);
 
-  // Capitalizes every word (not just the first letter of the whole string) —
-  // so "ahmad faris" -> "Ahmad Faris", not "Ahmad faris" — except known acronyms
-  // like "NFR", which stay fully uppercase regardless of how they're typed in the sheet.
   function titleCase(s) {
     if (!s) return '';
     return String(s).trim().split(/\s+/)
@@ -632,24 +574,16 @@
       .join(' ');
   }
 
-  // Normalized grouping key: trims whitespace and lowercases, so entries for the
-  // same person/department typed with different casing or stray spaces
-  // ("Zahra", "zahra ", "ZAHRA") merge into one group instead of splitting silently.
   function normKey(s) {
     return String(s || '').trim().toLowerCase();
   }
 
-  // Escapes text pulled from the Google Sheet before it's inserted into the page.
-  // Sheet-sourced values (names, departments) go through this before being placed
-  // in any innerHTML template — without it, a malicious cell value (e.g. containing
-  // a <script> tag) would execute in the browser of anyone viewing the dashboard.
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
   }
 
-  // Small generic line-icon set (stroke=currentColor, 24x24 viewBox), used for metrics + momentum headers.
   const ICONS = {
     bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
     tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3h7a2 2 0 0 1 2 2v7a2 2 0 0 1-.6 1.4l-8 8a2 2 0 0 1-2.8 0l-6-6a2 2 0 0 1 0-2.8l8-8A2 2 0 0 1 11 3z"/><circle cx="16" cy="8" r="1.3" fill="currentColor" stroke="none"/></svg>',
@@ -665,7 +599,6 @@
     flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-2.7 7-6.8 0-3-2-5-3.2-7.2C15 6.5 15 4.5 14 2c-1 2-3.5 4-4.5 7-1 3-4 4.6-4 8.2C5.5 19.3 8 22 12 22z"/><path d="M12 18c1.7 0 3-1.2 3-3 0-1.5-1-2.4-1.6-3.6-.4.8-1.4 1.4-2 2.4-.6 1-1.4 1.6-1.4 3.2 0 1.8 1.3 3 2 3z" fill="currentColor" stroke="none" opacity="0.35"/></svg>',
     trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/><path d="M12 14v3"/><path d="M9 21h6"/><path d="M9.5 17h5l.5 4H9l.5-4z"/></svg>',
   };
-  // Map each metric name to an icon key
   const METRIC_ICON = {
     'Combo Bag': 'bag', 'Promo Item': 'tag', 'Shell Cafe Promo': 'cup', 'Shell Cafe CPD': 'cup',
     'Shell Cafe Combo': 'combo', 'Refresh CPD': 'droplet', 'Refresh Meal': 'meal',
@@ -676,8 +609,6 @@
     return key ? `<span class="icon ${cls||''}">${ICONS[key]}</span>` : '';
   }
 
-  // Decorative laurel wreath, drawn behind podium avatars. Generic laurel-leaf motif
-  // (not any brand/trademarked artwork) — color set via CSS `color` on the wrapper.
   const WREATH_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <path d="M 40.9 83.8 L 27.5 76.8 L 18.3 64.8 L 15.0 50.0 L 18.3 35.2 L 26.6 24.0"/>
     <path d="M 59.1 83.8 L 72.5 76.8 L 81.7 64.8 L 85.0 50.0 L 81.7 35.2 L 73.4 24.0"/>
@@ -695,8 +626,6 @@
     <ellipse cx="76.8" cy="20.3" rx="6.2" ry="2.4" transform="rotate(42 76.8 20.3)"/>
   </svg>`;
 
-  // Circular avatar with a real photo (from the sheet's Photo URL column) and
-  // an initials fallback if the URL is blank or fails to load.
   function avatarHTML(name, photoUrl, extraClass) {
     const initial = escapeHtml((name || '?').charAt(0).toUpperCase());
     const img = photoUrl
@@ -717,11 +646,6 @@
     return `<div class="r-avatar">${img}<span class="avatar-fallback" ${fallbackDisplay}>${initial}</span></div>`;
   }
 
-  // Dates now arrive as plain ISO strings from the Apps Script proxy (it converts
-  // native Date objects via .toISOString() before sending), which `new Date()`
-  // parses correctly on its own — no special handling needed. The gviz-format
-  // regex below is kept only as a harmless fallback in case this ever reverts
-  // to reading gviz's own odd "Date(2026,7,10)" cell format directly.
   function parseGvizDate(v) {
     if (v == null) return null;
     if (v instanceof Date) return v;
@@ -733,9 +657,6 @@
     return isNaN(d) ? null : d;
   }
 
-  // ============================================================
-  // MAIN
-  // ============================================================
   async function loadDashboard() {
     document.getElementById('err-banner').style.display = 'none';
 
@@ -760,27 +681,6 @@
     fitTvDisplay();
   }
 
-  // ---- TV fit-to-screen: shrinks the dashboard uniformly so it fits one screen
-  // with no scrolling, using CSS `zoom` rather than `transform: scale()`. This
-  // distinction matters a lot for sharpness: `transform: scale()` is a purely
-  // visual/compositing trick — it stretches an already-finished rendering, like
-  // resizing a screenshot, and that softens EVERYTHING equally (text, the SVG
-  // trend line, progress bars, staff photos) since the browser treats it as one
-  // flattened image. `zoom` instead makes the browser genuinely RE-RENDER the
-  // page at the new effective size — fonts re-hinted, SVGs redrawn as vectors,
-  // images requested/displayed at the size that's actually needed — so
-  // everything stays as sharp as it would at that size natively, not stretched.
-  // `zoom` isn't in the official CSS spec, but is well-supported in Chromium-
-  // based browsers, which is what Android TV/Google TV run — appropriate here
-  // even though it wouldn't be a safe choice for a general public website.
-  // Computed from the ACTUAL screen resolution and the dashboard's real rendered
-  // height, not a hardcoded guess for one specific TV.
-  // NOTE: there's no minimum floor on the shrink factor, since scrolling was
-  // intentionally removed — if the dashboard grows a lot taller in the future
-  // (more staff, more leaderboard rows), this keeps shrinking to compensate, and
-  // very tall content could eventually look uncomfortably small. Worth revisiting
-  // if that becomes a real problem rather than a hypothetical one.
-  // Runs only once — later 5-minute data refreshes don't restart or reapply it.
   let tvFitStarted = false;
   function fitTvDisplay() {
     if (!document.body.classList.contains('tv-rotate') || tvFitStarted) return;
@@ -789,23 +689,17 @@
     const wrap = document.querySelector('.wrap');
 
     setTimeout(() => {
-      // #tv-stage's own (pre-rotation) height is set to 100vw in CSS — that's
-      // the "one screen" budget for .wrap's content, in .wrap's own local frame.
-      // Measured BEFORE zoom is applied, so this reflects the true natural size.
       const budget = window.innerWidth;
-      const contentH = wrap.scrollHeight; // .wrap's real full height at portrait width
+      const contentH = wrap.scrollHeight;
 
       const scale = Math.min(1, budget / contentH);
       wrap.style.zoom = scale;
       wrap.style.transform = 'translateX(-50%)';
 
-      // Everything is now correctly sized and positioned — reveal it with a
-      // clean fade instead of the earlier snap-into-place.
       document.getElementById('tv-stage').classList.add('tv-ready');
-    }, 500); // small delay so layout has settled before measuring scrollHeight
+    }, 500);
   }
 
-  // ---- Header date range, derived from the actual data present ----
   function renderDateRange({ tabName, headers, rows }) {
     const col = makeColFinder(tabName, headers);
     const iDate = col('Date');
@@ -817,11 +711,6 @@
     document.getElementById('daterange').textContent = `${fmt(min)} — ${fmt(max)}`;
   }
 
-  // ---- Podium: Rank 1 per department from Department_Winners_Clean ----
-  // Each champion is #1 within their OWN department — their scores aren't comparable
-  // to each other across departments (different metrics, team sizes, etc). So this
-  // does NOT rank them against one another: all three stands are equal, ordered by
-  // department name (stable, not score-driven) rather than staged as 1st/2nd/3rd.
   function renderPodium({ tabName, headers, rows }) {
     const col = makeColFinder(tabName, headers);
     const iDept = col('Department');
@@ -869,10 +758,6 @@
     }
   }
 
-  // ---- Leaderboard: one board per department, top 5, gap-to-next-rank ----
-  // Dept_Ranking_Clean has genuinely blank header cells for the first two columns
-  // in the sheet, so those two use a positional fallback (0, 1) — everything else
-  // is matched by name, so it survives reordering.
   function renderLeaderboard({ tabName, headers, rows }) {
     const col = makeColFinder(tabName, headers);
     const iShort = col('Shortname', 0);
@@ -888,7 +773,6 @@
       const deptKey = normKey(rawDept);
       const nameKey = normKey(rawName);
       if (!byDept[deptKey]) byDept[deptKey] = { label: titleCase(rawDept), people: {} };
-      // Merge duplicate rows for the same person (casing/whitespace typos) by summing their scores.
       if (!byDept[deptKey].people[nameKey]) {
         byDept[deptKey].people[nameKey] = { name: titleCase(rawName), score: 0, photo: r[iPhoto] || '' };
       }
@@ -917,9 +801,6 @@
     });
   }
 
-  // ---- Performance vs Target: sum actuals (daily input) vs sum targets (target master) ----
-  // Each metric column is looked up by its header name in both tabs, so reordering or
-  // inserting a column in either sheet can't silently attribute numbers to the wrong metric.
   function renderMetrics({ tabName: dailyTab, headers: dailyHeaders, rows: dailyInput },
                           { tabName: targetTab, headers: targetHeaders, rows: targetMaster }) {
     const dailyCol = makeColFinder(dailyTab, dailyHeaders);
@@ -944,9 +825,6 @@
     });
 
     const allMetrics = METRIC_NAMES.map((name, i) => ({ name, actual: actualTotals[i], target: targetTotals[i] }));
-    // Metrics with a real target get ranked by % and can appear in the spotlight.
-    // Metrics with no target data yet (target <= 0) can't be ranked by %, but should
-    // still be visible — showing them as "No target set" instead of silently vanishing.
     const withTarget = allMetrics
       .filter(m => m.target > 0)
       .map(m => ({ ...m, pct: m.actual / m.target }))
@@ -1012,7 +890,6 @@
     });
   }
 
-  // ---- Trends: Achievement_Trend_Clean ----
   function renderTrendAndWeekly({ tabName, headers, rows: trend }) {
     const col = makeColFinder(tabName, headers);
     const iDate = col('Date');
@@ -1054,7 +931,6 @@
       <text x="${W-padR}" y="${H-4}" text-anchor="end" class="axis-label">${trendDates[n-1]}</text>
     `;
 
-    // Weekly rhythm — average by day of week across all rows
     const order = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const sums = order.map(()=>0), counts = order.map(()=>0);
     rows.forEach(r => {
@@ -1084,14 +960,10 @@
     });
   }
 
-  // ---- Momentum: Most Improved (last 7 days vs prior 7) + Streaks (consecutive active days) ----
-  // NOTE: approximated from available data — see chat notes on definitions used.
   function renderMomentum({ tabName, headers, rows: dailyInput }) {
     const col = makeColFinder(tabName, headers);
     const iDate = col('Date');
     const iName = col('Site Hero');
-    // Reads the weighted point value (not raw units), so "most improved" and
-    // streaks reflect the same scoring system as the leaderboard/podium/trend now do.
     const iActual = col('Weighted Points');
     const rows = dailyInput
       .map(r => ({ date: parseGvizDate(r[iDate]), rawName: r[iName], nameKey: normKey(r[iName]), actual: typeof r[iActual] === 'number' ? r[iActual] : 0 }))
@@ -1103,8 +975,6 @@
       return;
     }
 
-    // Group by normalized name so the same person typed with different casing/whitespace
-    // across different days ("Zahra" / "zahra " / "ZAHRA") is treated as one person.
     const byPerson = {};
     rows.forEach(r => {
       if (!byPerson[r.nameKey]) byPerson[r.nameKey] = { label: titleCase(r.rawName), entries: [] };
@@ -1115,10 +985,6 @@
     const cutoff7 = new Date(maxDate); cutoff7.setDate(cutoff7.getDate() - 7);
     const cutoff14 = new Date(maxDate); cutoff14.setDate(cutoff14.getDate() - 14);
 
-    // Most improved: compare AVERAGE actual-per-active-day (not raw totals) between
-    // the two windows, so someone simply working more days doesn't look "more improved."
-    // Requires at least 3 active days logged in BOTH windows — otherwise a single
-    // lucky/unlucky day against a near-zero base produces misleading swings like "+900%".
     const MIN_ACTIVE_DAYS = 3;
     const improved = Object.values(byPerson).map(({ label, entries }) => {
       const recentEntries = entries.filter(e => e.date > cutoff7 && e.actual > 0);
@@ -1138,8 +1004,6 @@
       <div class="mom-row"><span class="mom-name">${escapeHtml(titleCase(x.name))}</span><span class="mom-val up">+${Math.round(x.growth)}%</span></div>
     `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">Not enough history yet</span></div>`;
 
-    // Streaks: consecutive most-recent days present with actual > 0.
-    // Hard-capped at 90 iterations so a data gap or bad date can never hang the tab.
     const MAX_STREAK_CHECK = 90;
     const streaks = Object.values(byPerson).map(({ label, entries }) => {
       const daySet = new Set(entries.filter(e => e.actual > 0).map(e => e.date.toDateString()));
@@ -1161,10 +1025,6 @@
     `).join('') : `<div class="mom-row"><span class="mom-name" style="color:var(--text-faint)">No active streaks yet</span></div>`;
   }
 
-  // ============================================================
-  // Static icons that don't depend on fetched data — set immediately,
-  // so they show even before (or if) the sheet fetch completes.
-  // ============================================================
   document.getElementById('ic-improved').innerHTML = ICONS.trending;
   document.getElementById('ic-streak').innerHTML = ICONS.flame;
   document.getElementById('ic-trophy').innerHTML = ICONS.trophy;
