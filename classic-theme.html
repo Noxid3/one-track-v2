@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OneTrack Classic — RCS Sg Bakap SB</title>
+<title>OneTrack — Redesign</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -468,10 +468,21 @@
   body.tv-rotate .trend-card{ padding: 10px 12px 8px; }
   body.tv-rotate .trend-head{ margin-bottom: 6px; }
   body.tv-rotate .bar-chart{ height: 90px; padding-top: 6px; }
-  body.tv-rotate .spotlight-grid{ grid-template-columns: 1fr; gap: 8px; margin-bottom: 8px; }
-  body.tv-rotate .spotlight{ padding: 12px 14px; gap: 12px; align-items: flex-start; }
+  body.tv-rotate .spotlight-grid{ grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 8px; }
+  body.tv-rotate .spotlight{ padding: 10px 10px; gap: 8px; align-items: flex-start; flex-wrap: nowrap; min-height: 72px; }
+  body.tv-rotate .m-pic{ display: none; } /* frees up horizontal room for text at 5-across width */
+  body.tv-rotate .spot-tag{ font-size: 8px; white-space: nowrap; }
+  body.tv-rotate .m-name{ font-size: 11.5px; }
+  body.tv-rotate .m-actual{ font-size: 16px; }
   body.tv-rotate .m-ring{ margin-top: 2px; } /* small nudge to visually line up with the tag+name's top edge */
-  body.tv-rotate .boards{ gap: 8px; }
+  body.tv-rotate .boards{ gap: 8px; grid-template-columns: repeat(3, 1fr); }
+  /* TV mode's 3 boards are flat siblings (not nested in .board-stack like
+     desktop), so they need their own position-based color coding — Cashier,
+     Forecourt, NFR, matching the fixed sort order in renderLeaderboard, and
+     matching the exact same colors the desktop view already uses. */
+  body.tv-rotate .boards > .board:nth-child(1){ border-top: 3px solid var(--maroon); }
+  body.tv-rotate .boards > .board:nth-child(2){ border-top: 3px solid var(--gold-dark); }
+  body.tv-rotate .boards > .board:nth-child(3){ border-top: 3px solid #7B4B94; }
   body.tv-rotate .board-head{ padding: 8px 12px 7px; }
   body.tv-rotate .row{ padding: 5px 12px; }
   /* TV mode leaderboard: just rank, avatar, and current score — no name,
@@ -998,6 +1009,26 @@
 
     const wrap = document.getElementById('boards-wrap');
     const deptEntries = Object.values(byDept);
+    const isTv = document.body.classList.contains('tv-rotate');
+
+    if (isTv) {
+      // TV mode uses a genuinely different structure — 3 flat, equal-width
+      // columns (one per department) instead of the desktop's "NFR alone +
+      // Cashier/Forecourt stacked" layout. This isn't just a CSS override:
+      // the desktop structure nests Cashier and Forecourt inside one shared
+      // container, so spreading them into separate columns requires actually
+      // building different HTML, not just restyling the same markup.
+      // Sorted into a fixed, predictable order so the CSS color-coding below
+      // (which targets each column by position) reliably lands on the right
+      // department regardless of the order departments first appear in the data.
+      const order = ['cashier', 'forecourt', 'nfr'];
+      const sorted = deptEntries.slice().sort((a,b) =>
+        order.indexOf(normKey(a.label)) - order.indexOf(normKey(b.label)));
+      const html = sorted.map(d => buildBoardHTML(d.label, d.people)).join('');
+      wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
+      return;
+    }
+
     const nfrEntry = deptEntries.find(d => normKey(d.label) === 'nfr');
     const otherEntries = deptEntries.filter(d => normKey(d.label) !== 'nfr');
 
