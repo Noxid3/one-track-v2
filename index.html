@@ -538,15 +538,6 @@
     'Refresh CPD','Refresh Meal','Five Star Promo','Daily Fresh Sales','Customer Service','Toys'
   ];
 
-  // These 5 metrics are being entered into the daily sheet already multiplied
-  // by their weight (a data-entry habit, not a code bug) — dividing back out
-  // by the same weight here recovers the true raw unit count. Only affects
-  // KPI Progress's raw-vs-target display; does NOT correct the Weighted Points
-  // column, which is computed by a sheet formula and needs its own fix there.
-  const PRE_WEIGHTED_METRICS = {
-    'Combo Bag': 5, 'Toys': 5, 'Daily Fresh Sales': 5, 'Customer Service': 5, 'Refresh Meal': 3,
-  };
-
   async function fetchTab(tabName) {
     const url = `${PROXY_URL}?sheet=${encodeURIComponent(tabName)}`;
     const res = await fetch(url);
@@ -896,12 +887,7 @@
     monthDaily.forEach(row => {
       dailyIdx.forEach((idx, i) => {
         const v = row[idx];
-        if (typeof v === 'number') {
-          // See PRE_WEIGHTED_METRICS note above — recovers true raw units for
-          // the 5 metrics being entered already multiplied by their weight.
-          const weight = PRE_WEIGHTED_METRICS[METRIC_NAMES[i]];
-          actualTotals[i] += weight ? v / weight : v;
-        }
+        if (typeof v === 'number') actualTotals[i] += v;
       });
     });
 
