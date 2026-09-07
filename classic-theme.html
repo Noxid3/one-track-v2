@@ -468,14 +468,21 @@
   body.tv-rotate .trend-card{ padding: 10px 12px 8px; }
   body.tv-rotate .trend-head{ margin-bottom: 6px; }
   body.tv-rotate .bar-chart{ height: 90px; padding-top: 6px; }
-  body.tv-rotate .spotlight-grid{ grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+  /* Flexbox instead of CSS Grid specifically for TV mode — the TV's embedded
+     browser appears to handle newer Grid features (like minmax()) differently
+     than a modern desktop browser does, even though the exact same CSS computes
+     correctly there. Flexbox is older, simpler, more consistently supported
+     technology, avoiding that whole class of engine-version risk. */
+  body.tv-rotate .spotlight-grid{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  body.tv-rotate .spotlight{ flex: 0 0 calc((100% - 32px) / 5); } /* 5 across, minus 4 gaps of 8px */
   body.tv-rotate .spotlight{ padding: 10px 10px; gap: 8px; align-items: flex-start; flex-wrap: nowrap; min-height: 72px; }
   body.tv-rotate .m-pic{ display: none; } /* frees up horizontal room for text at 5-across width */
   body.tv-rotate .spot-tag{ font-size: 8px; }
   body.tv-rotate .m-name{ font-size: 11.5px; }
   body.tv-rotate .m-actual{ font-size: 16px; }
   body.tv-rotate .m-ring{ margin-top: 2px; } /* small nudge to visually line up with the tag+name's top edge */
-  body.tv-rotate .boards{ gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  body.tv-rotate .boards{ display: flex; gap: 8px; }
+  body.tv-rotate .boards > .board{ flex: 1 1 0; min-width: 0; }
   /* TV mode's 3 boards are flat siblings (not nested in .board-stack like
      desktop), so they need their own position-based color coding — Cashier,
      Forecourt, NFR, matching the fixed sort order in renderLeaderboard, and
