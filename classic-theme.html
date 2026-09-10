@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OneTrack — Redesign</title>
+<title>OneTrack — RCS Sg Bakap</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -474,10 +474,21 @@
      correctly there. Flexbox is older, simpler, more consistently supported
      technology, avoiding that whole class of engine-version risk. */
   body.tv-rotate .spotlight-grid{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-  body.tv-rotate .spotlight{ flex: 0 0 calc((100% - 32px) / 5); } /* 5 across, minus 4 gaps of 8px */
-  body.tv-rotate .spotlight{ padding: 10px 10px; gap: 8px; align-items: flex-start; flex-wrap: nowrap; min-height: 72px; }
+  body.tv-rotate .spotlight{
+    flex: 0 0 calc((100% - 32px) / 5); /* 5 across, minus 4 gaps of 8px */
+    min-width: 0; /* the missing piece — without this, a flex item won't shrink
+                     below its content's natural width no matter what flex-basis
+                     says, which is the actual reason only ~2 fit per row before */
+    padding: 10px 10px; gap: 8px; align-items: flex-start; flex-wrap: nowrap; min-height: 72px;
+  }
   body.tv-rotate .m-pic{ display: none; } /* frees up horizontal room for text at 5-across width */
-  body.tv-rotate .spot-tag{ font-size: 8px; }
+  /* Status text ("Below Target"/"Watch"/"On Target") removed for TV specifically —
+     just the ring (with its % already color-coded good/warn/bad) and the raw
+     actual/target numbers. Less text per card also means less minimum width
+     each card needs, reinforcing the fix above rather than fighting it. */
+  body.tv-rotate .spot-tag{ display: none; }
+  body.tv-rotate .m-body{ min-width: 0; }
+  body.tv-rotate .m-name{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.tv-rotate .m-name{ font-size: 11.5px; }
   body.tv-rotate .m-actual{ font-size: 16px; }
   body.tv-rotate .m-ring{ margin-top: 2px; } /* small nudge to visually line up with the tag+name's top edge */
