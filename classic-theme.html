@@ -457,6 +457,11 @@
      scale transform. Only active in ?tv=1 mode; the normal landscape view is
      untouched. */
   body.tv-rotate .insights-link{ display:none; } /* interactive nav link, not relevant on an unattended TV display */
+  /* Achievement Trend + Weekly Rhythm moved to the Insights page instead — freeing
+     up this whole section's space in TV mode specifically lets the KPI cards use
+     it, so they can go back to full size/detail without needing to be this cramped.
+     Desktop/landscape view is untouched — Trends still shows there as before. */
+  body.tv-rotate #trends-section{ display:none; }
   body.tv-rotate .podium-card{ padding: 16px 20px 0; margin-bottom: 12px; }
   body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; }
   body.tv-rotate .section-label{ margin: 14px 0 8px 2px; }
@@ -486,7 +491,7 @@
      just the ring (with its % already color-coded good/warn/bad) and the raw
      actual/target numbers. Less text per card also means less minimum width
      each card needs, reinforcing the fix above rather than fighting it. */
-  body.tv-rotate .spot-tag{ display: none; }
+  body.tv-rotate .spot-tag{ font-size: 8px; }
   body.tv-rotate .m-body{ min-width: 0; }
   body.tv-rotate .m-name{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body.tv-rotate .m-name{ font-size: 11.5px; }
@@ -572,6 +577,7 @@
   <div class="section-label">KPI Progress <span class="section-tag">— this month</span></div>
   <div class="spotlight-grid" id="spotlight"></div>
 
+  <div id="trends-section">
   <div class="section-label">Trends</div>
   <div class="trends">
     <div class="trend-card">
@@ -588,6 +594,7 @@
       </div>
       <div class="bar-chart" id="weekly-bars"></div>
     </div>
+  </div>
   </div>
 
   <footer>
