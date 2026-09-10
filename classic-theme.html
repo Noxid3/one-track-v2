@@ -473,30 +473,44 @@
   body.tv-rotate .trend-card{ padding: 10px 12px 8px; }
   body.tv-rotate .trend-head{ margin-bottom: 6px; }
   body.tv-rotate .bar-chart{ height: 90px; padding-top: 6px; }
-  /* Flexbox instead of CSS Grid specifically for TV mode — the TV's embedded
-     browser appears to handle newer Grid features (like minmax()) differently
-     than a modern desktop browser does, even though the exact same CSS computes
-     correctly there. Flexbox is older, simpler, more consistently supported
-     technology, avoiding that whole class of engine-version risk. */
-  body.tv-rotate .spotlight-grid{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-  body.tv-rotate .spotlight{
-    flex: 0 0 calc((100% - 32px) / 5); /* 5 across, minus 4 gaps of 8px */
-    min-width: 0; /* the missing piece — without this, a flex item won't shrink
-                     below its content's natural width no matter what flex-basis
-                     says, which is the actual reason only ~2 fit per row before */
-    padding: 10px 10px; gap: 8px; align-items: flex-start; flex-wrap: nowrap; min-height: 72px;
+  /* TV mode uses a compact single-column list instead of the ring-card grid —
+     after three different attempts to reliably fit multiple card columns on
+     this specific device (CSS Grid, then Flexbox, each with various fixes),
+     none held up consistently. A single-column list sidesteps the whole
+     category of "how many fit per row" problem entirely, since there's only
+     ever one column. Desktop/landscape view is completely unaffected — it
+     still uses the ring cards exactly as before. */
+  body.tv-rotate .spotlight-grid{ display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+
+  /* Compact metric row — TV mode only. One row per metric: icon, name, status
+     tag, a thin progress bar, the percentage, and the actual/target numbers,
+     all in a single horizontal line. */
+  .tv-metric-row{
+    display:flex; align-items:center; gap:10px;
+    background: var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:7px 12px 7px 10px;
+    position:relative; overflow:hidden;
   }
-  body.tv-rotate .m-pic{ display: none; } /* frees up horizontal room for text at 5-across width */
-  /* Status text ("Below Target"/"Watch"/"On Target") removed for TV specifically —
-     just the ring (with its % already color-coded good/warn/bad) and the raw
-     actual/target numbers. Less text per card also means less minimum width
-     each card needs, reinforcing the fix above rather than fighting it. */
-  body.tv-rotate .spot-tag{ font-size: 8px; }
-  body.tv-rotate .m-body{ min-width: 0; }
-  body.tv-rotate .m-name{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  body.tv-rotate .m-name{ font-size: 11.5px; }
-  body.tv-rotate .m-actual{ font-size: 16px; }
-  body.tv-rotate .m-ring{ margin-top: 2px; } /* small nudge to visually line up with the tag+name's top edge */
+  .tv-metric-row::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .tv-metric-row.bad::before{ background: var(--bad); }
+  .tv-metric-row.warn::before{ background: var(--warn); }
+  .tv-metric-row.good::before{ background: var(--good); }
+  .tv-metric-row.none::before{ background: var(--text-faint); }
+  .tv-metric-icon{ width:15px; height:15px; flex-shrink:0; color: var(--text-faint); margin-left:4px; }
+  .tv-metric-name{ width:150px; flex-shrink:0; font-weight:600; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tv-metric-tag{ width:82px; flex-shrink:0; font-size:9px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color: var(--text-faint); }
+  .tv-metric-bar-track{ flex:1; min-width:0; height:8px; border-radius:100px; background: rgba(0,0,0,0.06); overflow:hidden; }
+  .tv-metric-bar-fill{ height:100%; border-radius:100px; }
+  .tv-metric-bar-fill.good{ background: var(--good); }
+  .tv-metric-bar-fill.warn{ background: var(--warn); }
+  .tv-metric-bar-fill.bad{ background: var(--bad); }
+  .tv-metric-bar-fill.none{ background: var(--text-faint); }
+  .tv-metric-pct{ width:42px; flex-shrink:0; text-align:right; font-weight:700; font-size:13px; }
+  .tv-metric-pct.good{ color: var(--good); }
+  .tv-metric-pct.warn{ color: var(--warn); }
+  .tv-metric-pct.bad{ color: var(--bad); }
+  .tv-metric-pct.none{ color: var(--text-faint); }
+  .tv-metric-nums{ width:112px; flex-shrink:0; text-align:right; font-size:11px; font-family:'IBM Plex Mono',monospace; color: var(--text-faint); }
   body.tv-rotate .boards{ display: flex; gap: 8px; }
   body.tv-rotate .boards > .board{ flex: 1 1 0; min-width: 0; }
   /* TV mode's 3 boards are flat siblings (not nested in .board-stack like
@@ -1193,16 +1207,36 @@
     const orderedMetrics = withTarget.concat(withoutTarget);
 
     const R = 22, C = 2*Math.PI*R;
+    const isTv = document.body.classList.contains('tv-rotate');
 
     spotlightEl.innerHTML = '';
     orderedMetrics.forEach(m => {
       const hasTarget = m.pct !== null;
       const pctDisplay = hasTarget ? Math.round(m.pct*100) : null;
       const level = !hasTarget ? 'none' : (m.pct >= 1 ? 'good' : m.pct >= 0.7 ? 'warn' : 'bad');
-      const dash = hasTarget ? Math.min(m.pct,1) * C : 0;
       const tagText = !hasTarget ? 'No target' : (level === 'bad' ? 'Below target' : level === 'warn' ? 'Watch' : 'On target');
       const centerLabel = hasTarget ? `${pctDisplay}%` : '—';
       const div = document.createElement('div');
+
+      if (isTv) {
+        const barWidth = hasTarget ? Math.min(m.pct,1) * 100 : 0;
+        const numsLabel = hasTarget
+          ? `${Math.round(m.actual).toLocaleString()} / ${Math.round(m.target).toLocaleString()}`
+          : `${Math.round(m.actual).toLocaleString()} logged`;
+        div.className = `tv-metric-row ${level}`;
+        div.innerHTML = `
+          ${iconFor(m.name, 'tv-metric-icon')}
+          <div class="tv-metric-name">${m.name}</div>
+          <div class="tv-metric-tag">${tagText}</div>
+          <div class="tv-metric-bar-track"><div class="tv-metric-bar-fill ${level}" style="width:${barWidth}%"></div></div>
+          <div class="tv-metric-pct ${level}">${centerLabel}</div>
+          <div class="tv-metric-nums">${numsLabel}</div>
+        `;
+        spotlightEl.appendChild(div);
+        return;
+      }
+
+      const dash = hasTarget ? Math.min(m.pct,1) * C : 0;
       div.className = `spotlight ${level}`;
       div.innerHTML = `
         <div class="m-pic">${iconFor(m.name)}</div>
