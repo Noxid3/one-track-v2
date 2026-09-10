@@ -638,27 +638,6 @@
   </div>
 
   <div class="insight-card">
-    <div class="insight-head">Achievement Trend &amp; Weekly Rhythm</div>
-    <div class="insight-sub">Overall achievement over time, and which days of the week tend to perform best.</div>
-    <div class="trends" style="margin-top:8px;">
-      <div class="trend-card">
-        <div class="trend-head">
-          <span class="trend-title">Achievement Trend</span>
-          <span class="trend-sub" id="trend-range">1 Jul – 10 Aug</span>
-        </div>
-        <svg id="trend-svg" width="100%" height="130" viewBox="0 0 640 130" preserveAspectRatio="none"></svg>
-      </div>
-      <div class="trend-card">
-        <div class="trend-head">
-          <span class="trend-title">Weekly Rhythm</span>
-          <span class="trend-sub">avg by day</span>
-        </div>
-        <div class="bar-chart" id="weekly-bars"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="insight-card">
     <div class="insight-head">Monthly Champions Archive</div>
     <div class="insight-sub">Each completed month's top scorer per department — going back as far as data allows, up to 6 months. The current in-progress month isn't shown here, since it hasn't finished yet.</div>
     <div class="archive-grid" id="monthly-archive"></div>
@@ -803,10 +782,7 @@
 
   async function loadInsights() {
     document.getElementById('err-banner').style.display = 'none';
-    const [{ tabName, headers, rows }, trendData] = await Promise.all([
-      fetchTab('Clean_Daily_Input'),
-      fetchTab('Achievement_Trend_Clean'),
-    ]);
+    const { tabName, headers, rows } = await fetchTab('Clean_Daily_Input');
     const col = makeColFinder(tabName, headers);
     const iDate = col('Date');
     const iName = col('Site Hero');
@@ -829,7 +805,6 @@
     populateStaffSelect();
     renderDepartmentComparison();
     renderMonthlyArchive();
-    renderTrendAndWeekly(trendData);
 
     document.getElementById('footer-updated').textContent =
       `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
@@ -995,82 +970,6 @@
   // final yet), and any month with genuinely zero rows is skipped entirely
   // rather than shown as a blank/fake card.
   // ============================================================
-  // ============================================================
-  // Achievement Trend + Weekly Rhythm — ported from the main dashboard
-  // unchanged (reads the same Achievement_Trend_Clean tab), since these
-  // charts aren't theme-specific and now live here instead of on the TV
-  // display, freeing up that space for the KPI cards there.
-  // ============================================================
-  function renderTrendAndWeekly({ tabName, headers, rows: trend }) {
-    const col = makeColFinder(tabName, headers);
-    const iDate = col('Date');
-    const iPct = col('Achievement %');
-    const rows = trend
-      .map(r => ({ date: parseGvizDate(r[iDate]), pct: r[iPct] }))
-      .filter(r => r.date && typeof r.pct === 'number');
-    const trendDates = rows.map(r => r.date.toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
-    const trendVals = rows.map(r => r.pct * 100);
-
-    document.getElementById('trend-range').textContent =
-      rows.length ? `${trendDates[0]} – ${trendDates[trendDates.length-1]}` : '';
-
-    const svg = document.getElementById('trend-svg');
-    const W = 640, H = 130, padL = 4, padR = 4, padT = 10, padB = 18;
-    const capMax = 200;
-    const capped = trendVals.map(v => Math.min(v, capMax));
-    const n = capped.length;
-    if (n < 2) { svg.innerHTML = ''; return; }
-    const x = i => padL + (i/(n-1)) * (W - padL - padR);
-    const y = v => padT + (1 - v/capMax) * (H - padT - padB);
-
-    let pathD = capped.map((v,i)=> `${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-    let fillD = pathD + ` L ${x(n-1).toFixed(1)} ${y(0).toFixed(1)} L ${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
-
-    svg.innerHTML = `
-      <defs>
-        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#3FAE4A" stop-opacity="0.45"/>
-          <stop offset="100%" stop-color="#3FAE4A" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <line x1="${padL}" y1="${y(100).toFixed(1)}" x2="${W-padR}" y2="${y(100).toFixed(1)}" class="avg-line"/>
-      <text x="${W-padR}" y="${y(100)-4}" text-anchor="end" class="axis-label">100% target</text>
-      <path d="${fillD}" class="line-fill"/>
-      <path d="${pathD}" class="line-path"/>
-      ${capped.map((v,i) => i % 4 === 0 || i === n-1 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" class="line-dot"/>` : '').join('')}
-      <text x="${padL}" y="${H-4}" class="axis-label">${trendDates[0]}</text>
-      <text x="${W-padR}" y="${H-4}" text-anchor="end" class="axis-label">${trendDates[n-1]}</text>
-    `;
-
-    const order = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const sums = order.map(()=>0), counts = order.map(()=>0);
-    rows.forEach(r => {
-      const dow = r.date.getDay();
-      sums[dow] += r.pct*100; counts[dow]++;
-    });
-    const mondayFirst = [1,2,3,4,5,6,0];
-    const weeklyRhythm = mondayFirst.map(dow => ({
-      day: order[dow],
-      val: counts[dow] ? sums[dow]/counts[dow] : 0,
-      weekend: dow === 0 || dow === 6,
-    }));
-
-    const barsEl = document.getElementById('weekly-bars');
-    barsEl.innerHTML = '';
-    const maxV = Math.max(...weeklyRhythm.map(d=>d.val), 1);
-    weeklyRhythm.forEach(d => {
-      const h = (d.val / maxV) * 100;
-      const dcol = document.createElement('div');
-      dcol.className = `bar-col ${d.weekend ? 'weekend' : ''}`;
-      dcol.innerHTML = `
-        <span class="bar-val">${Math.round(d.val)}%</span>
-        <div class="bar-fill-el ${d.weekend ? 'weekend' : 'weekday'}" style="height:${h}%"></div>
-        <span class="bar-day">${d.day}</span>
-      `;
-      barsEl.appendChild(dcol);
-    });
-  }
-
   function renderMonthlyArchive() {
     const DEPT_COLORS = getDeptColors();
     const now = new Date();
