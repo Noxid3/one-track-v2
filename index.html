@@ -157,9 +157,9 @@
     background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     color: var(--maroon);
     font-family:'Space Grotesk', sans-serif;
-    font-size:15px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
+    font-size:19px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
     text-align:center;
-    padding:11px 46px;
+    padding:13px 46px;
     margin: 0 auto 22px;
     width:fit-content;
     clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
@@ -258,6 +258,7 @@
     display:grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    margin-top: 18px;
   }
   .mom-card{
     background: var(--card);
@@ -406,13 +407,17 @@
     font-family:'Space Grotesk',sans-serif;
     font-weight:700; font-size:13.5px; color: var(--maroon);
   }
+  /* In dark mode specifically, the department name reads better in white than
+     the maroon accent color used in light mode — a deliberate preference, not
+     a contrast fix (the maroon itself is already legible in dark mode). */
+  [data-theme="dark"] .board-head{ color: var(--text); }
   /* Small color accent so the two stacked boards (Cashier/Forecourt) are
      distinguishable at a glance, not just by their text label. */
-  .board-stack .board:nth-child(1){ border-top: 3px solid var(--maroon); }
+  .board-stack .board:nth-child(1){ border-top: 3px solid var(--gold-dark); }
   .board-stack .board:nth-child(2){ border-top: 3px solid var(--gold-dark); }
   /* NFR sits as its own direct child of .boards (not inside .board-stack) —
      give it a matching accent so it doesn't look plain next to the other two. */
-  .boards > .board{ border-top: 3px solid var(--purple-nfr); }
+  .boards > .board{ border-top: 3px solid var(--gold-dark); }
   .row{
     display:flex; align-items:center; gap:9px;
     padding: 7px 14px;
@@ -566,9 +571,9 @@
      desktop), so they need their own position-based color coding — Cashier,
      Forecourt, NFR, matching the fixed sort order in renderLeaderboard, and
      matching the exact same colors the desktop view already uses. */
-  body.tv-rotate .boards > .board:nth-child(1){ border-top: 3px solid var(--maroon); }
+  body.tv-rotate .boards > .board:nth-child(1){ border-top: 3px solid var(--gold-dark); }
   body.tv-rotate .boards > .board:nth-child(2){ border-top: 3px solid var(--gold-dark); }
-  body.tv-rotate .boards > .board:nth-child(3){ border-top: 3px solid var(--purple-nfr); }
+  body.tv-rotate .boards > .board:nth-child(3){ border-top: 3px solid var(--gold-dark); }
   body.tv-rotate .board-head{ padding: 8px 12px 7px; }
   body.tv-rotate .row{ padding: 5px 12px; }
   /* TV mode leaderboard: just rank, avatar, and current score — no name,
