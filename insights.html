@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* Light theme matching the original Data Studio dashboard's actual look —
-       colors sampled directly from the original (deep maroon-red pills/ribbons,
-       warm gold wreaths/banners, light off-white page background). */
+    /* Light theme (default) matching the original Data Studio dashboard's actual
+       look — colors sampled directly from the original (deep maroon-red pills/
+       ribbons, warm gold wreaths/banners, light off-white page background). */
     --bg: #F2F4F1;
     --bg-2: #FFFFFF;
     --card: #FFFFFF;
@@ -32,20 +32,54 @@
     --bronze: #B87C4C;
     --shell-red: #EC1C24;
     --maroon: #A90C1D;
+    --purple-nfr: #7B4B94;
     --brand: #F7D54D;
     --brand-dim: rgba(247,213,77,0.20);
     --flame: #E8940C;
+    --wash-1: rgba(247,213,77,0.10);
+    --wash-2: rgba(169,12,29,0.04);
+  }
+  /* Dark theme — same structure as the main dashboard's dark mode, same
+     palette, kept consistent across both pages on purpose. */
+  [data-theme="dark"]{
+    --bg: #0B1622;
+    --bg-2: #0F1E2E;
+    --card: #142839;
+    --card-hi: #17304A;
+    --line: rgba(255,255,255,0.08);
+    --text: #EDF1F5;
+    --text-dim: #93A5B8;
+    --text-faint: #5C6E80;
+    --good: #33D6A6;
+    --good-dim: rgba(51,214,166,0.16);
+    --warn: #F5B84E;
+    --warn-dim: rgba(245,184,78,0.16);
+    --bad: #F0685B;
+    --bad-dim: rgba(240,104,91,0.16);
+    --gold: #F7D54D;
+    --gold-dark: #D4AF37;
+    --silver: #C9D3DC;
+    --bronze: #D89A6A;
+    --shell-red: #EC1C24;
+    --maroon: #D63447;
+    --purple-nfr: #B57EDC;
+    --brand: #F7D54D;
+    --brand-dim: rgba(247,213,77,0.18);
+    --flame: #F5824E;
+    --wash-1: rgba(51,214,166,0.06);
+    --wash-2: rgba(232,196,104,0.05);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
     background:
-      radial-gradient(1200px 500px at 15% -10%, rgba(247,213,77,0.10), transparent 60%),
-      radial-gradient(900px 500px at 100% 0%, rgba(169,12,29,0.04), transparent 55%),
+      radial-gradient(1200px 500px at 15% -10%, var(--wash-1), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, var(--wash-2), transparent 55%),
       var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
     padding: 28px 20px 60px;
     min-height:100vh;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
   .wrap{ max-width: 1160px; margin: 0 auto; }
 
@@ -488,6 +522,14 @@
     background: var(--card); border:1px solid var(--line);
   }
   .back-link:hover{ color: var(--maroon); }
+  .theme-toggle{
+    display:flex; align-items:center; justify-content:center;
+    width:36px; height:36px; border-radius:50%;
+    background: var(--card); border:1px solid var(--gold);
+    cursor:pointer; font-size:16px; line-height:1;
+    transition: background-color 0.2s ease;
+  }
+  .theme-toggle:hover{ background: var(--card-hi); }
 
   .insight-card{
     background: var(--card);
@@ -573,7 +615,12 @@
         <h1>One<span>Track</span> <span style="color:var(--text-faint); font-size:20px;">Insights</span></h1>
       </div>
     </div>
-    <a class="back-link" href="./classic-theme.html">&larr; Back to Dashboard</a>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
+        <span id="theme-toggle-icon">🌙</span>
+      </button>
+      <a class="back-link" href="./index.html">&larr; Back to Dashboard</a>
+    </div>
   </header>
 
   <div class="insight-card">
@@ -634,8 +681,36 @@
 
 <script>
   // ============================================================
-  // Shared boilerplate — identical to classic-theme.html's, since this page
-  // reads from the same Apps Script proxy and Clean_Daily_Input tab.
+  // Light/dark theme — applied first, before anything else, to minimize any
+  // flash of the wrong theme. Persisted per-device via localStorage, matching
+  // the main dashboard's approach exactly, so a preference set on one page
+  // carries over to the other automatically (same key, same device).
+  // ============================================================
+  const THEME_KEY = 'onetrack-theme';
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    const icon = document.getElementById('theme-toggle-icon');
+    if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+    // These two read colors directly from the live CSS variables (see
+    // getDeptColors), so re-running them immediately reflects the new theme
+    // instead of waiting for the next 5-minute data refresh to catch up.
+    renderDepartmentComparison();
+    renderMonthlyArchive();
+  });
+
+  // ============================================================
+  // Shared boilerplate — same Apps Script proxy and Clean_Daily_Input tab the
+  // main dashboard (index.html) reads from.
   // ============================================================
   const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyEuxZ_SFPJv3cj7smgLtKn0NnQuAUyYNoBv6LXMP7gJduN4VxsnrLuekNhJnIrDQnb/exec';
   const REFRESH_MS = 5 * 60 * 1000;
@@ -709,7 +784,17 @@
     'Five Star Promo':'star','Daily Fresh Sales':'leaf','Customer Service':'headset','Toys':'block',
   };
 
-  const DEPT_COLORS = { cashier: '#A90C1D', forecourt: '#C9A227', nfr: '#7B4B94' };
+  // Reads the CURRENT theme's actual colors directly from CSS, rather than
+  // hardcoding one theme's values — so these charts/dots stay correct if the
+  // user toggles theme, without needing their own separate light/dark copies.
+  function getDeptColors() {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+      cashier: styles.getPropertyValue('--maroon').trim() || '#A90C1D',
+      forecourt: styles.getPropertyValue('--gold-dark').trim() || '#C9A227',
+      nfr: styles.getPropertyValue('--purple-nfr').trim() || '#7B4B94',
+    };
+  }
 
   // ============================================================
   // Data loading
@@ -848,6 +933,7 @@
   // visually comparable on one chart.
   // ============================================================
   function renderDepartmentComparison() {
+    const DEPT_COLORS = getDeptColors();
     const byDeptDate = {}; // deptKey -> { dateStr -> total }
     const allDates = new Set();
     DAILY_ROWS.forEach(r => {
@@ -986,6 +1072,7 @@
   }
 
   function renderMonthlyArchive() {
+    const DEPT_COLORS = getDeptColors();
     const now = new Date();
     const container = document.getElementById('monthly-archive');
 
