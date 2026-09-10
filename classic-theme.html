@@ -642,6 +642,17 @@
     'Refresh CPD','Refresh Meal','Five Star Promo','Daily Fresh Sales','Customer Service','Toys'
   ];
 
+  // TV-mode leaderboard carousel state — module-level so it survives across
+  // the periodic 5-minute data refresh (renderLeaderboard runs again each time,
+  // but the carousel's current page and its running timer should carry on
+  // smoothly rather than reset/restart). Desktop view is unaffected — it never
+  // touches this, since it always shows every employee with no pagination.
+  const LEADERBOARD_PAGE_SIZE = 6;
+  const LEADERBOARD_CAROUSEL_MS = 5000;
+  let leaderboardCarouselData = {}; // deptKey -> { label, ranked: [...] }
+  let leaderboardCarouselPage = 0;
+  let leaderboardCarouselStarted = false;
+
   // ============================================================
   // Fetch helper — calls the Apps Script proxy instead of Google's public gviz
   // endpoint, so the Sheet itself never needs to be link-shared. Returns the
@@ -1049,8 +1060,27 @@
       const order = ['cashier', 'forecourt', 'nfr'];
       const sorted = deptEntries.slice().sort((a,b) =>
         order.indexOf(normKey(a.label)) - order.indexOf(normKey(b.label)));
-      const html = sorted.map(d => buildBoardHTML(d.label, d.people)).join('');
-      wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
+
+      // Each board caps at 6 visible people — departments with more than that
+      // (NFR, usually) auto-rotate through the rest in pages of 6 every 5s,
+      // instead of one board towering over the other two. Rebuilt fresh on
+      // every call (including the periodic data refresh), but the actual page
+      // position and the running timer persist across those rebuilds.
+      leaderboardCarouselData = {};
+      sorted.forEach(d => {
+        const ranked = Object.values(d.people).sort((a,b) => b.score - a.score);
+        leaderboardCarouselData[normKey(d.label)] = { label: d.label, ranked };
+      });
+
+      renderLeaderboardCarouselPage();
+
+      if (!leaderboardCarouselStarted) {
+        leaderboardCarouselStarted = true;
+        setInterval(() => {
+          leaderboardCarouselPage++;
+          renderLeaderboardCarouselPage();
+        }, LEADERBOARD_CAROUSEL_MS);
+      }
       return;
     }
 
@@ -1064,6 +1094,40 @@
     if (nfrEntry) {
       html += buildBoardHTML(nfrEntry.label, nfrEntry.people);
     }
+    wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
+  }
+
+  // ---- TV-mode leaderboard carousel: renders one page (max 6 rows) per board,
+  // reading from leaderboardCarouselData (rebuilt each time renderLeaderboard
+  // runs) and leaderboardCarouselPage (advanced by the running timer). Rank
+  // numbers and the gap-to-previous-rank always reflect the person's TRUE
+  // overall position — a name on page 2 still correctly shows as rank #8, not
+  // reset back to #2 — and the gold/silver/bronze rank styling only ever
+  // applies to the genuine top 3, which by definition only ever appear on the
+  // first page.
+  function renderLeaderboardCarouselPage() {
+    const wrap = document.getElementById('boards-wrap');
+    const order = ['cashier', 'forecourt', 'nfr'];
+    const html = order.map(key => {
+      const d = leaderboardCarouselData[key];
+      if (!d) return '';
+      const totalPages = Math.max(1, Math.ceil(d.ranked.length / LEADERBOARD_PAGE_SIZE));
+      const startIdx = (leaderboardCarouselPage % totalPages) * LEADERBOARD_PAGE_SIZE;
+      const page = d.ranked.slice(startIdx, startIdx + LEADERBOARD_PAGE_SIZE);
+      const rowsHtml = page.map((r, i) => {
+        const globalIdx = startIdx + i;
+        const rankClass = globalIdx === 0 ? 'r1' : globalIdx === 1 ? 'r2' : globalIdx === 2 ? 'r3' : '';
+        const gap = globalIdx === 0 ? 'Leader' : `+${(d.ranked[globalIdx-1].score - r.score).toLocaleString()} to #${globalIdx}`;
+        return `<div class="row ${rankClass}">
+          <div class="rk">${globalIdx+1}</div>
+          ${miniAvatarHTML(r.name, r.photo)}
+          <div class="rname">${escapeHtml(r.name)}</div>
+          <div class="rgap ${globalIdx===0?'first':''}">${gap}</div>
+          <div class="rscore">${r.score.toLocaleString()}</div>
+        </div>`;
+      }).join('');
+      return `<div class="board"><div class="board-head">${escapeHtml(d.label)}</div>${rowsHtml}</div>`;
+    }).join('');
     wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
   }
 
