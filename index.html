@@ -400,6 +400,15 @@
     border-radius: 14px;
     overflow:hidden;
   }
+  /* Smooth entrance for the leaderboard carousel's rows each time the page
+     changes (see renderLeaderboardCarouselPage) — the board-head stays static
+     since only the rows portion is wrapped in this class, so headers don't
+     needlessly re-animate every 5 seconds along with the names. */
+  .board-rows-slide{ animation: boardRowsSlideIn 0.45s ease; }
+  @keyframes boardRowsSlideIn{
+    from{ transform: translateY(16px); opacity: 0; }
+    to{ transform: translateY(0); opacity: 1; }
+  }
   .board-head{
     padding: 11px 14px 10px;
     border-bottom: 2px solid var(--gold);
@@ -1221,7 +1230,7 @@
           <div class="rscore">${r.score.toLocaleString()}</div>
         </div>`;
       }).join('');
-      return `<div class="board"><div class="board-head">${escapeHtml(d.label)}</div>${rowsHtml}</div>`;
+      return `<div class="board"><div class="board-head">${escapeHtml(d.label)}</div><div class="board-rows-slide">${rowsHtml}</div></div>`;
     }).join('');
     wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
   }
