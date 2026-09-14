@@ -612,7 +612,12 @@
   body.tv-rotate .rname{ display: none; }
 
   @media (max-width: 760px){
-    .podium{ grid-template-columns: 1fr; }
+    /* !important is deliberate here, not a shortcut — renderPodium() sets an
+       inline grid-template-columns style via JS (to handle departments beyond
+       3), and inline styles always beat regular CSS rules, media queries
+       included, no matter how specific. This is the one reliable way to make
+       sure mobile genuinely wins over whatever the JS just set. */
+    .podium{ grid-template-columns: 1fr !important; }
     .spotlight-grid{ grid-template-columns: 1fr; }
     .boards{ grid-template-columns: 1fr; }
     .momentum{ grid-template-columns: 1fr; }
