@@ -1150,9 +1150,11 @@
     try {
       const res = await fetch(`${PROXY_URL}?action=setRange&start=${startStr}&end=${endStr}`);
       const data = await res.json();
-      if (data.error) console.warn('Could not save date range server-side:', data.error);
+      if (data.error) {
+        showError(`The date range applied locally, but saving it for other devices failed: ${data.error}`);
+      }
     } catch (err) {
-      console.warn('Could not reach the proxy to save the date range:', err);
+      showError(`The date range applied locally, but couldn't reach the proxy to save it for other devices: ${err.message}`);
     }
   }
 
