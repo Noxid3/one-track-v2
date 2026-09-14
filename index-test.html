@@ -176,10 +176,10 @@
     background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     color: var(--maroon);
     font-family:'Space Grotesk', sans-serif;
-    font-size:19px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
+    font-size:24px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
     text-align:center;
-    padding:13px 46px;
-    margin: 0 auto 22px;
+    padding:16px 54px;
+    margin: 0 auto 26px;
     width:fit-content;
     clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
     box-shadow: 0 3px 8px rgba(201,162,39,0.35);
@@ -211,12 +211,12 @@
   .wreath path{ fill:none; stroke-width:1.4; opacity:0.85; }
   /* All three stands are equal — each is #1 within their own department, so
      none of them get a "taller" or more prominent treatment than the others. */
-  .stand .wreath{ width:104px; height:104px; color: var(--gold-dark); }
+  .stand .wreath{ width:138px; height:138px; color: var(--gold-dark); }
   .avatar{
-    width:70px; height:70px; border-radius:50%;
+    width:92px; height:92px; border-radius:50%;
     background: linear-gradient(145deg,#F2E7C0,#E4D49B);
     display:flex; align-items:center; justify-content:center;
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:28px;
     color:var(--maroon); border:3px solid var(--gold); box-shadow:0 0 0 3px rgba(201,162,39,0.25);
     position:relative; z-index:2;
     overflow:hidden;
@@ -547,7 +547,13 @@
      Desktop/landscape view is untouched — Trends still shows there as before. */
   body.tv-rotate #trends-section{ display:none; }
   body.tv-rotate .podium-card{ padding: 16px 20px 0; margin-bottom: 12px; }
-  body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; }
+  /* Podium avatar/wreath/ribbon text just got bigger for desktop specifically
+     (better use of the available card width there) — TV and mobile keep their
+     previous, already-appropriately-sized values, since TV's vertical space is
+     tightly budgeted and mobile's cards are much narrower to begin with. */
+  body.tv-rotate .podium-eyebrow{ margin-bottom: 12px; font-size:19px; padding:13px 46px; }
+  body.tv-rotate .stand .wreath{ width:104px; height:104px; }
+  body.tv-rotate .avatar{ width:70px; height:70px; font-size:22px; }
   body.tv-rotate .section-label{ margin: 14px 0 8px 2px; }
   body.tv-rotate .momentum{ gap: 8px; margin-top: 14px; }
   body.tv-rotate .mom-card{ padding: 10px 12px; }
@@ -623,6 +629,11 @@
     .momentum{ grid-template-columns: 1fr; }
     .trends{ grid-template-columns: 1fr; }
     .brand h1{ font-size:26px; }
+    /* Keep the podium at its previous, mobile-appropriate size — the bigger
+       desktop version would feel cramped on a narrow single-column phone screen. */
+    .podium-eyebrow{ font-size:19px; padding:13px 46px; }
+    .stand .wreath{ width:104px; height:104px; }
+    .avatar{ width:70px; height:70px; font-size:22px; }
   }  .err-banner{
     background: var(--bad-dim); border:1px solid var(--bad); color: var(--bad);
     border-radius: 10px; padding: 10px 16px; font-size:12.5px; font-weight:600;

@@ -9,6 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
+    /* Hints the browser to render native controls (the date picker's popup
+       calendar, scrollbars) in a matching light/dark style — without this,
+       the calendar popup would show jarring white even in dark mode. */
+    color-scheme: light;
     /* Light theme (default) matching the original Data Studio dashboard's actual
        look — colors sampled directly from the original (deep maroon-red pills/
        ribbons, warm gold wreaths/banners, light off-white page background). */
@@ -45,6 +49,7 @@
      revival of the old separate navy design — that had different layout
      logic entirely and has been retired in favor of one shared structure. */
   [data-theme="dark"]{
+    color-scheme: dark;
     --bg: #0B1622;
     --bg-2: #0F1E2E;
     --card: #142839;
@@ -113,18 +118,32 @@
   }
   .brand h1 span{ color: var(--shell-red); }
   .brand .sub{ color: var(--text-dim); font-size: 13.5px; font-weight:500; }
-  .daterange{
+  .range-picker{
+    display:flex; align-items:center; gap:6px;
     background: var(--card);
     border:1px solid rgba(251,206,7,0.18);
-    padding: 9px 16px;
+    padding: 6px 8px 6px 14px;
     border-radius: 100px;
-    font-size: 13px;
-    color: var(--text-dim);
-    font-weight:600;
-    letter-spacing:0.01em;
-    display:flex; align-items:center; gap:8px;
   }
-  .daterange::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
+  .range-input{
+    border:none; background:transparent; color: var(--text-dim);
+    font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600;
+    padding:4px 2px; cursor:pointer;
+  }
+  .range-input::-webkit-calendar-picker-indicator{ opacity:0.6; cursor:pointer; }
+  .range-sep{ color: var(--text-faint); font-size:12px; }
+  .range-apply{
+    font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color: var(--maroon);
+    background: var(--gold); border:none; border-radius:100px;
+    padding:7px 14px; cursor:pointer;
+  }
+  .range-apply:hover{ filter:brightness(1.05); }
+  .tv-range-label{
+    display:none; /* shown only in TV mode — see body.tv-rotate override below */
+    background: var(--card); border:1px solid rgba(251,206,7,0.18);
+    padding: 9px 16px; border-radius: 100px;
+    font-size: 13px; color: var(--text-dim); font-weight:600;
+  }
   .insights-link{
     font-size:12.5px; font-weight:700; color: var(--maroon);
     text-decoration:none; padding:9px 14px; border-radius:100px;
@@ -519,6 +538,8 @@
      scale transform. Only active in ?tv=1 mode; the normal landscape view is
      untouched. */
   body.tv-rotate .insights-link{ display:none; } /* interactive nav link, not relevant on an unattended TV display */
+  body.tv-rotate .range-picker{ display:none; } /* interactive control, not for an unattended TV — it shows the read-only label below instead */
+  body.tv-rotate .tv-range-label{ display:flex; align-items:center; }
   body.tv-rotate .theme-toggle{ display:none; } /* same reasoning — nobody's clicking a toggle on a wall-mounted TV; whichever theme was last set on that device just applies automatically */
   /* Achievement Trend + Weekly Rhythm moved to the Insights page instead — freeing
      up this whole section's space in TV mode specifically lets the KPI cards use
@@ -591,7 +612,12 @@
   body.tv-rotate .rname{ display: none; }
 
   @media (max-width: 760px){
-    .podium{ grid-template-columns: 1fr; }
+    /* !important is deliberate here, not a shortcut — renderPodium() sets an
+       inline grid-template-columns style via JS (to handle departments beyond
+       3), and inline styles always beat regular CSS rules, media queries
+       included, no matter how specific. This is the one reliable way to make
+       sure mobile genuinely wins over whatever the JS just set. */
+    .podium{ grid-template-columns: 1fr !important; }
     .spotlight-grid{ grid-template-columns: 1fr; }
     .boards{ grid-template-columns: 1fr; }
     .momentum{ grid-template-columns: 1fr; }
@@ -624,12 +650,18 @@
         <h1>One<span>Track</span></h1>
       </div>
     </div>
-    <div style="display:flex; align-items:center; gap:10px;">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
         <span id="theme-toggle-icon">🌙</span>
       </button>
       <a href="./insights.html" class="insights-link">Insights &rarr;</a>
-      <div class="daterange" id="daterange">Loading…</div>
+      <div class="range-picker" id="range-picker">
+        <input type="date" id="range-start" class="range-input">
+        <span class="range-sep">–</span>
+        <input type="date" id="range-end" class="range-input">
+        <button type="button" id="range-apply" class="range-apply">Apply</button>
+      </div>
+      <div class="tv-range-label" id="tv-range-label"></div>
     </div>
   </header>
 
@@ -639,7 +671,7 @@
     <div class="podium-overflow" id="podium-overflow" style="display:none"></div>
   </div>
 
-  <div class="section-label">Leaderboard <span class="section-tag">— this month</span></div>
+  <div class="section-label">Leaderboard</div>
   <div class="boards" id="boards-wrap">
     <!-- board columns injected dynamically, one per department -->
   </div>
@@ -655,7 +687,7 @@
     </div>
   </div>
 
-  <div class="section-label">KPI Progress <span class="section-tag">— this month</span></div>
+  <div class="section-label">KPI Progress</div>
   <div class="spotlight-grid" id="spotlight"></div>
 
   <div id="trends-section">
@@ -722,7 +754,7 @@
   // ============================================================
   // No Sheet ID here anymore — the Apps Script runs bound to the Sheet directly,
   // and the Sheet itself no longer needs to be publicly link-shared at all.
-  const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyEuxZ_SFPJv3cj7smgLtKn0NnQuAUyYNoBv6LXMP7gJduN4VxsnrLuekNhJnIrDQnb/exec';
+  const PROXY_URL = 'https://script.google.com/macros/s/AKfycbxrmEGN8BkbPaqblHKVFqqo1APPB1VXzfQP41Cqwqetd9zLplXmnVF5y_5zE6vSybtCow/exec';
   const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
 
   // TV rotation mode — add ?tv=1 to the URL used on the physically-rotated station
@@ -775,9 +807,9 @@
   // Builds a column-index lookup for one tab's headers, matched by name
   // (case-insensitive, trimmed) instead of a fixed position. A reordered or
   // renamed column is caught immediately with a clear error, instead of silently
-  // attributing data to the wrong metric. `fallbackIdx` is only for the couple of
-  // columns in Dept_Ranking_Clean whose header cell is genuinely blank in the sheet —
-  // if you ever add a header there, this will prefer the name automatically.
+  // attributing data to the wrong metric. `fallbackIdx` is for the rare tab with
+  // a genuinely blank header cell — if a header is ever added there, this will
+  // prefer the name automatically.
   function makeColFinder(tabName, headers) {
     const cache = {};
     const col = function(label, fallbackIdx) {
@@ -932,40 +964,203 @@
     return isNaN(d) ? null : d;
   }
 
-  // Used by KPI Progress to match the same calendar-month-to-date window the
-  // Podium/Leaderboard already use (via their own sheet-side formulas) — kept
-  // consistent on purpose so every section of the dashboard represents the
-  // same time period, rather than silently mixing different windows.
-  function isCurrentMonth(d) {
+  // ============================================================
+  // Free-form date range — replaces the old "always current calendar month"
+  // behavior for Podium, Leaderboard, and KPI Progress. Momentum deliberately
+  // stays on its own always-recent logic (see renderMomentum) regardless of
+  // what's picked here, since "most improved this week" only makes sense
+  // relative to genuinely recent days, not an arbitrary picked range.
+  // ============================================================
+  let ALL_DAILY_ROWS = [];  // every raw Clean_Daily_Input row, parsed once and reused
+  let ALL_TARGET_ROWS = []; // every raw Clean_Target_Master row, parsed once and reused
+  let PHOTO_LOOKUP = {};    // nameKey -> photo URL, from Staff_Final
+  let activeRangeStart = defaultRangeStart();
+  let activeRangeEnd = defaultRangeEnd();
+
+  function defaultRangeStart() {
     const now = new Date();
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  function defaultRangeEnd() {
+    return new Date();
+  }
+  function endOfDay(d) {
+    const e = new Date(d);
+    e.setHours(23, 59, 59, 999);
+    return e;
+  }
+  function isInActiveRange(d) {
+    return d >= activeRangeStart && d <= endOfDay(activeRangeEnd);
+  }
+  function fmtInputDate(d) {
+    // yyyy-mm-dd, what <input type="date"> needs — built from local
+    // date parts rather than toISOString(), which would shift the date
+    // near midnight in timezones behind UTC.
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function fmtDisplayDate(d) {
+    return d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  // Every person's summed Weighted Points within the currently active range —
+  // the shared computation Podium and Leaderboard both build on, so they can
+  // never disagree with each other about what a person's total is.
+  function computePersonTotals() {
+    const byPerson = {};
+    ALL_DAILY_ROWS.forEach(r => {
+      if (!isInActiveRange(r.date)) return;
+      if (!byPerson[r.nameKey]) {
+        byPerson[r.nameKey] = {
+          name: titleCase(r.name), dept: titleCase(r.dept), deptKey: r.deptKey,
+          score: 0, photo: PHOTO_LOOKUP[r.nameKey] || '',
+        };
+      }
+      byPerson[r.nameKey].score += r.weighted;
+    });
+    return byPerson;
   }
 
   // ============================================================
   // MAIN
   // ============================================================
+  // Tries to read whatever date range was last saved server-side (written by
+  // any device's Apply button) — so every device, including the TV, stays in
+  // sync with whatever was most recently picked, anywhere. This degrades
+  // silently if the Apps Script hasn't been updated with the setRange/getRange
+  // actions yet (see Code.gs) — the dashboard just keeps using its own current
+  // range instead of throwing an error over an optional enhancement.
+  async function fetchSavedRange() {
+    try {
+      const res = await fetch(`${PROXY_URL}?action=getRange`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.error || !data.start || !data.end) return null;
+      const start = new Date(data.start + 'T00:00:00');
+      const end = new Date(data.end + 'T00:00:00');
+      if (isNaN(start) || isNaN(end)) return null;
+      return { start, end };
+    } catch (err) {
+      return null; // proxy not updated yet, or genuinely offline — fall back silently
+    }
+  }
+
   async function loadDashboard() {
     document.getElementById('err-banner').style.display = 'none';
 
-    const [winners, deptRanking, dailyInput, targetMaster, trend] = await Promise.all([
-      fetchTab('Department_Winners_Clean'),
-      fetchTab('Dept_Ranking_Clean'),
+    const saved = await fetchSavedRange();
+    if (saved) { activeRangeStart = saved.start; activeRangeEnd = saved.end; }
+
+    const [dailyInputTab, targetMasterTab, trend, staffFinal] = await Promise.all([
       fetchTab('Clean_Daily_Input'),
       fetchTab('Clean_Target_Master'),
       fetchTab('Achievement_Trend_Clean'),
+      fetchTab('Staff_Final'),
     ]);
 
-    renderPodium(winners);
-    renderLeaderboard(deptRanking);
-    renderMetrics(dailyInput, targetMaster);
+    // Photo lookup — Clean_Daily_Input itself has no Photo URL column, so this
+    // is a separate join by shortname, same key used throughout the rest of
+    // the dashboard for matching a person across different tabs.
+    const staffCol = makeColFinder(staffFinal.tabName, staffFinal.headers);
+    const iStaffShort = staffCol('SHORTNAME');
+    const iStaffPhoto = staffCol.any(['Photo URL Converted', 'Photo URL']);
+    PHOTO_LOOKUP = {};
+    staffFinal.rows.forEach(r => {
+      const key = normKey(r[iStaffShort]);
+      if (key) PHOTO_LOOKUP[key] = r[iStaffPhoto] || '';
+    });
+
+    // Raw daily rows, parsed once here and reused by Podium, Leaderboard, and
+    // KPI Progress — each filters this same set to the currently active date
+    // range rather than re-fetching or maintaining separate copies.
+    const dailyCol = makeColFinder(dailyInputTab.tabName, dailyInputTab.headers);
+    const iDate = dailyCol('Date');
+    const iName = dailyCol('Site Hero');
+    const iDept = dailyCol('Department');
+    const iWeighted = dailyCol('Weighted Points');
+    const metricIdx = METRIC_NAMES.map(name => dailyCol(name));
+    ALL_DAILY_ROWS = dailyInputTab.rows.map(r => {
+      const metrics = {};
+      METRIC_NAMES.forEach((name, i) => { metrics[name] = typeof r[metricIdx[i]] === 'number' ? r[metricIdx[i]] : 0; });
+      return {
+        date: parseGvizDate(r[iDate]),
+        name: r[iName], nameKey: normKey(r[iName]),
+        dept: r[iDept], deptKey: normKey(r[iDept]),
+        weighted: typeof r[iWeighted] === 'number' ? r[iWeighted] : 0,
+        metrics,
+      };
+    }).filter(r => r.date && r.nameKey);
+
+    const targetCol = makeColFinder(targetMasterTab.tabName, targetMasterTab.headers);
+    const iTargetDate = targetCol('Date');
+    const targetMetricIdx = METRIC_NAMES.map(name => targetCol(name));
+    ALL_TARGET_ROWS = targetMasterTab.rows.map(r => {
+      const metrics = {};
+      METRIC_NAMES.forEach((name, i) => { metrics[name] = typeof r[targetMetricIdx[i]] === 'number' ? r[targetMetricIdx[i]] : 0; });
+      return { date: parseGvizDate(r[iTargetDate]), metrics };
+    }).filter(r => r.date);
+
+    renderPodium();
+    renderLeaderboard();
+    renderMetrics();
     renderTrendAndWeekly(trend);
-    renderMomentum(dailyInput);
-    renderDateRange(dailyInput);
+    renderMomentum(dailyInputTab); // stays on genuine recent-trend logic, independent of the picker
+    updateRangeDisplay();
 
     document.getElementById('footer-updated').textContent =
       `Live from Google Sheets · Updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
 
     fitTvDisplay();
+  }
+
+  // Reflects the currently active range in both the desktop picker's input
+  // values and the TV mode's read-only label — called on load and again
+  // whenever Apply is pressed.
+  function updateRangeDisplay() {
+    const startInput = document.getElementById('range-start');
+    const endInput = document.getElementById('range-end');
+    if (startInput) startInput.value = fmtInputDate(activeRangeStart);
+    if (endInput) endInput.value = fmtInputDate(activeRangeEnd);
+    const label = document.getElementById('tv-range-label');
+    if (label) label.textContent = `${fmtDisplayDate(activeRangeStart)} — ${fmtDisplayDate(activeRangeEnd)}`;
+  }
+
+  // Re-renders just the three sections that depend on the active range —
+  // no re-fetch needed, since ALL_DAILY_ROWS/ALL_TARGET_ROWS already hold
+  // everything locally. Momentum is deliberately NOT re-rendered here, since
+  // it never depends on the picked range in the first place.
+  function applyDateRange() {
+    const startInput = document.getElementById('range-start');
+    const endInput = document.getElementById('range-end');
+    const newStart = startInput?.value ? new Date(startInput.value + 'T00:00:00') : null;
+    const newEnd = endInput?.value ? new Date(endInput.value + 'T00:00:00') : null;
+    if (!newStart || !newEnd || isNaN(newStart) || isNaN(newEnd)) return;
+    if (newStart > newEnd) { showError('Start date must be before end date.'); return; }
+    activeRangeStart = newStart;
+    activeRangeEnd = newEnd;
+    renderPodium();
+    renderLeaderboard();
+    renderMetrics();
+    updateRangeDisplay();
+    saveRangeToServer(startInput.value, endInput.value);
+  }
+  document.getElementById('range-apply')?.addEventListener('click', applyDateRange);
+
+  // Writes the picked range back to the Sheet so other devices (the TV,
+  // anyone else's browser) pick up the same range on their own next refresh.
+  // Fails silently if the Apps Script hasn't been updated with the setRange
+  // action yet — the range still applies locally either way, this just means
+  // it won't have synced anywhere else until that part's deployed.
+  async function saveRangeToServer(startStr, endStr) {
+    try {
+      const res = await fetch(`${PROXY_URL}?action=setRange&start=${startStr}&end=${endStr}`);
+      const data = await res.json();
+      if (data.error) {
+        showError(`The date range applied locally, but saving it for other devices failed: ${data.error}`);
+      }
+    } catch (err) {
+      showError(`The date range applied locally, but couldn't reach the proxy to save it for other devices: ${err.message}`);
+    }
   }
 
   // ---- TV fit-to-screen: shrinks the dashboard uniformly so it fits one screen
@@ -1013,50 +1208,22 @@
     }, 500); // small delay so layout has settled before measuring scrollHeight
   }
 
-  // ---- Header date range, derived from the actual data present ----
-  function renderDateRange({ tabName, headers, rows }) {
-    const col = makeColFinder(tabName, headers);
-    const iDate = col('Date');
-    const dates = rows.map(r => parseGvizDate(r[iDate])).filter(Boolean);
-    if (!dates.length) return;
-    const min = new Date(Math.min(...dates));
-    const max = new Date(Math.max(...dates));
-    const fmt = d => d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
-    document.getElementById('daterange').textContent = `${fmt(min)} — ${fmt(max)}`;
-  }
-
-  // ---- Podium: Rank 1 per department from Department_Winners_Clean ----
+  // ---- Podium: top scorer per department, computed client-side from
+  // ALL_DAILY_ROWS filtered to the active date range (see computePersonTotals) ----
   // Each champion is #1 within their OWN department — their scores aren't comparable
   // to each other across departments (different metrics, team sizes, etc). So this
   // does NOT rank them against one another: all three stands are equal, ordered by
   // department name (stable, not score-driven) rather than staged as 1st/2nd/3rd.
-  function renderPodium({ tabName, headers, rows }) {
-    const col = makeColFinder(tabName, headers);
-    const iDept = col('Department');
-    const iRank = col('Rank');
-    const iShort = col('Shortname');
-    const iScore = col.any(['Total Points', 'Total Items']);
-    const iPhoto = col('Photo URL');
+  function renderPodium() {
+    const totals = computePersonTotals();
 
-    const rank1Rows = rows
-      .filter(r => r[iRank] === 1)
-      .map(r => ({ dept: r[iDept], name: r[iShort], score: r[iScore] || 0, photo: r[iPhoto] || '' }))
-      // A rank-1 row with a blank/missing department is a data error, not a
-      // genuine 4th department — without this, it forms its own bogus group
-      // below (since it doesn't match any real department's normalized key)
-      // and can still bump a real department's champion into overflow.
-      .filter(c => normKey(c.dept) !== '');
-
-    // Group by NORMALIZED department (trim + lowercase) rather than trusting the
-    // sheet to have exactly one rank-1 row per department. If a stale or duplicate
-    // rank-1 tag ever ends up on a second row for the same department, this keeps
-    // only the highest-scoring entry for that department instead of letting the
-    // duplicate occupy a podium slot and silently push a real department's
-    // champion into overflow (or off the podium entirely).
+    // Top scorer per department — same "keep the highest, not a duplicate"
+    // safeguard the old sheet-based version had, just computed here now
+    // instead of trusted from a pre-built table.
     const byDept = {};
-    rank1Rows.forEach(c => {
-      const key = normKey(c.dept);
-      if (!byDept[key] || c.score > byDept[key].score) byDept[key] = c;
+    Object.values(totals).forEach(p => {
+      if (!p.deptKey) return;
+      if (!byDept[p.deptKey] || p.score > byDept[p.deptKey].score) byDept[p.deptKey] = p;
     });
     const champions = Object.values(byDept)
       .sort((a,b) => String(a.dept).localeCompare(String(b.dept)));
@@ -1068,16 +1235,16 @@
     const el = document.getElementById('podium');
     if (!champions.length) {
       el.style.gridTemplateColumns = '1fr';
-      el.innerHTML = `<div class="empty-state">No department champions yet this month — check back once today's activity is logged.</div>`;
+      el.innerHTML = `<div class="empty-state">No department champions in this date range — try widening it.</div>`;
       document.getElementById('podium-overflow').style.display = 'none';
       return;
     }
     el.style.gridTemplateColumns = `repeat(${Math.max(n,1)}, 1fr)`;
     el.innerHTML = top3.map(c => `
       <div class="stand">
-        <div class="dept-tag">${escapeHtml(titleCase(c.dept))}</div>
+        <div class="dept-tag">${escapeHtml(c.dept)}</div>
         ${avatarHTML(c.name, c.photo)}
-        <div class="p-name">${escapeHtml(titleCase(c.name))}</div>
+        <div class="p-name">${escapeHtml(c.name)}</div>
         <div class="p-score">${(c.score||0).toLocaleString()} pts</div>
       </div>
     `).join('');
@@ -1089,8 +1256,8 @@
         <div class="champ-chip">
           ${avatarHTML(c.name, c.photo, 'chip-avatar')}
           <div class="chip-body">
-            <div class="chip-dept">${escapeHtml(titleCase(c.dept))}</div>
-            <div class="chip-name">${escapeHtml(titleCase(c.name))} · ${(c.score||0).toLocaleString()} pts</div>
+            <div class="chip-dept">${escapeHtml(c.dept)}</div>
+            <div class="chip-name">${escapeHtml(c.name)} · ${(c.score||0).toLocaleString()} pts</div>
           </div>
         </div>
       `).join('');
@@ -1101,30 +1268,15 @@
   }
 
   // ---- Leaderboard: one board per department, every employee, gap-to-next-rank ----
-  // Dept_Ranking_Clean has genuinely blank header cells for the first two columns
-  // in the sheet, so those two use a positional fallback (0, 1) — everything else
-  // is matched by name, so it survives reordering.
-  function renderLeaderboard({ tabName, headers, rows }) {
-    const col = makeColFinder(tabName, headers);
-    const iShort = col('Shortname', 0);
-    const iDept = col('Department', 1);
-    const iScore = col('sum', 2);
-    const iPhoto = col('Photo URL');
-
+  // Computed client-side from the same ALL_DAILY_ROWS/active-range totals as Podium,
+  // so the two sections can never disagree about anyone's score.
+  function renderLeaderboard() {
+    const totals = computePersonTotals();
     const byDept = {};
-    rows.forEach(r => {
-      const rawDept = r[iDept];
-      const rawName = r[iShort];
-      if (!rawDept || !rawName) return;
-      const deptKey = normKey(rawDept);
-      const nameKey = normKey(rawName);
-      if (!byDept[deptKey]) byDept[deptKey] = { label: titleCase(rawDept), people: {} };
-      // Merge duplicate rows for the same person (casing/whitespace typos) by summing their scores.
-      if (!byDept[deptKey].people[nameKey]) {
-        byDept[deptKey].people[nameKey] = { name: titleCase(rawName), score: 0, photo: r[iPhoto] || '' };
-      }
-      byDept[deptKey].people[nameKey].score += (r[iScore] || 0);
-      if (!byDept[deptKey].people[nameKey].photo && r[iPhoto]) byDept[deptKey].people[nameKey].photo = r[iPhoto];
+    Object.values(totals).forEach(p => {
+      if (!p.deptKey) return;
+      if (!byDept[p.deptKey]) byDept[p.deptKey] = { label: p.dept, people: {} };
+      byDept[p.deptKey].people[normKey(p.name)] = { name: p.name, score: p.score, photo: p.photo };
     });
 
     // NFR gets its own column (it's the largest department); everything else
@@ -1198,7 +1350,7 @@
     if (nfrEntry) {
       html += buildBoardHTML(nfrEntry.label, nfrEntry.people);
     }
-    wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
+    wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity in this date range — try widening it.</div>`;
   }
 
   // ---- TV-mode leaderboard carousel: renders one page (max 6 rows) per board,
@@ -1245,7 +1397,7 @@
         const rowsHtml = buildBoardRowsHTML(d, 0);
         return `<div class="board" id="board-${key}"><div class="board-head">${escapeHtml(d.label)}</div><div class="board-rows-slide" id="board-rows-${key}" data-total-pages="${totalPages}">${rowsHtml}</div></div>`;
       }).join('');
-      wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity yet this month — check back once today's activity is logged.</div>`;
+      wrap.innerHTML = html || `<div class="empty-state">No leaderboard activity in this date range — try widening it.</div>`;
       wrap.dataset.carouselInit = '1';
       return;
     }
@@ -1273,48 +1425,27 @@
   // ---- Performance vs Target: sum actuals (daily input) vs sum targets (target master) ----
   // Each metric column is looked up by its header name in both tabs, so reordering or
   // inserting a column in either sheet can't silently attribute numbers to the wrong metric.
-  function renderMetrics({ tabName: dailyTab, headers: dailyHeaders, rows: dailyInput },
-                          { tabName: targetTab, headers: targetHeaders, rows: targetMaster }) {
-    const dailyCol = makeColFinder(dailyTab, dailyHeaders);
-    const targetCol = makeColFinder(targetTab, targetHeaders);
-    const iDailyDate = dailyCol('Date');
-    const iTargetDate = targetCol('Date');
-    const dailyIdx = METRIC_NAMES.map(name => dailyCol(name));
-    const targetIdx = METRIC_NAMES.map(name => targetCol(name));
-
-    // Filtered to the current calendar month, matching the same window the
-    // Podium/Leaderboard use — this section previously summed ALL-TIME history
-    // with no date filter at all, which is exactly the inconsistency that made
-    // the dashboard's different sections hard to compare against each other.
-    const monthDaily = dailyInput.filter(row => {
-      const d = parseGvizDate(row[iDailyDate]);
-      return d && isCurrentMonth(d);
-    });
-    const monthTarget = targetMaster.filter(row => {
-      const d = parseGvizDate(row[iTargetDate]);
-      return d && isCurrentMonth(d);
-    });
+  function renderMetrics() {
+    // Filtered to the currently active date range (see isInActiveRange) —
+    // Podium, Leaderboard, and this section all now share the exact same
+    // range, so they can never disagree about what period they're showing.
+    const rangeDaily = ALL_DAILY_ROWS.filter(r => isInActiveRange(r.date));
+    const rangeTarget = ALL_TARGET_ROWS.filter(r => isInActiveRange(r.date));
 
     const spotlightEl = document.getElementById('spotlight');
-    if (!monthDaily.length) {
-      spotlightEl.innerHTML = `<div class="empty-state">No KPI activity logged yet this month — check back once today's numbers are in.</div>`;
+    if (!rangeDaily.length) {
+      spotlightEl.innerHTML = `<div class="empty-state">No KPI activity logged in this date range — try widening it.</div>`;
       return;
     }
 
     const actualTotals = METRIC_NAMES.map(() => 0);
-    monthDaily.forEach(row => {
-      dailyIdx.forEach((idx, i) => {
-        const v = row[idx];
-        if (typeof v === 'number') actualTotals[i] += v;
-      });
+    rangeDaily.forEach(row => {
+      METRIC_NAMES.forEach((name, i) => { actualTotals[i] += row.metrics[name] || 0; });
     });
 
     const targetTotals = METRIC_NAMES.map(() => 0);
-    monthTarget.forEach(row => {
-      targetIdx.forEach((idx, i) => {
-        const v = row[idx];
-        if (typeof v === 'number') targetTotals[i] += v;
-      });
+    rangeTarget.forEach(row => {
+      METRIC_NAMES.forEach((name, i) => { targetTotals[i] += row.metrics[name] || 0; });
     });
 
     const allMetrics = METRIC_NAMES.map((name, i) => ({ name, actual: actualTotals[i], target: targetTotals[i] }));
